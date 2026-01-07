@@ -1,0 +1,17 @@
+build
+out
+.cache
+.idea
+.vs
+.vscode
+deprecated
+
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.env
+dist/
+build/
+*.egg-info/
+.pytest_cache/
