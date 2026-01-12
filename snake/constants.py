@@ -1,9 +1,7 @@
-from typing import Tuple
-
 # Types
-Color = Tuple[int, int, int]
-Position = Tuple[int, int]
-Shape = Tuple[int, int]
+Color = tuple[int, int, int]
+Position = tuple[int, int]
+Shape = tuple[int, int]
 
 # Window
 WINDOW_WIDTH: int = 600
@@ -11,8 +9,8 @@ WINDOW_HEIGHT: int = 600
 WINDOW_TITLE: str = "Snake"
 
 # Game
-GRID_WIDTH: int = 10
-GRID_HEIGHT: int = 10
+GRID_WIDTH: int = 20
+GRID_HEIGHT: int = 20
 DELTA_TIME: float = 1.0 / 5.0
 
 # Colors

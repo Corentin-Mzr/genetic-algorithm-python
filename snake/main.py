@@ -4,7 +4,6 @@ from render import draw_game
 from snake_game import SnakeGame, Direction
 from constants import *
 
-
 def main() -> None:
     # Pygame setup
     pg.init()
@@ -43,14 +42,9 @@ def main() -> None:
             accumulator -= DELTA_TIME
             
             if direction is not None:
-                game.move_snake(direction)
-        
-            if game.is_apple_eaten():
-                game.add_snake_part()
-                game.increment_score()
-                game.spawn_apple()  
+                game.move_absolute(direction)
                 
-            if game.is_snake_colliding() or game.is_win():
+            if game.is_colliding() or game.is_win():
                 running = False
                     
             if not running:

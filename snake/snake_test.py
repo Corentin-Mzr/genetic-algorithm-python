@@ -1,12 +1,14 @@
+from pathlib import Path
+
 import pygame as pg
 import numpy as np
 
-from pathlib import Path
-
 from constants import *
 from snake_ai import SnakeAI
-from snake_game import SnakeGame, Direction
+from snake_game import RELATIVE_ACTIONS
+from snake_wrapper import SnakeGameWrapper
 from render import draw_game
+        
 
 def test(ai: SnakeAI, model_name: str) -> None:
     # Pygame setup
@@ -20,12 +22,13 @@ def test(ai: SnakeAI, model_name: str) -> None:
     font = pg.font.Font(None, 24)
     
     # Game setup
-    game: SnakeGame = SnakeGame()
-    game.prev_direction = Direction.UP
+    game = SnakeGameWrapper()
+    state = game.reset()
     accumulator: float = 0.0
     delta_time: float = 1.0 / 30.0
-    steps_no_eat = 0
     steps = 0
+    
+    prev_state = state
     
     # Main loop
     while running:
@@ -39,44 +42,45 @@ def test(ai: SnakeAI, model_name: str) -> None:
         # Update game
         while accumulator >= delta_time:
             accumulator -= delta_time
-            steps_no_eat += 1
             steps += 1
             
-            state = game.get_state()
-            direction = ai.get_action(state.to_array())
-            game.move_snake_relative(direction)
-        
-            if game.is_apple_eaten():
-                game.add_snake_part()
-                game.increment_score()
-                game.spawn_apple()  
-                steps_no_eat = 0
-                
-            if game.is_snake_colliding() or game.is_win() or steps_no_eat > 500:
+            prev_state = state
+            direction = ai.get_action(state)
+            state, _, terminated = game.step(direction)
+            
+            if terminated:
                 running = False
-                    
-            if not running:
-                break
         
         # Rendering
-        pg.display.set_caption(f"{WINDOW_TITLE} - Model: {model_name} - Score: {game.score}")
+        pg.display.set_caption(f"{WINDOW_TITLE} - Model: {model_name} - Score: {game.game.score}")
         alpha = accumulator / delta_time
-        screen.fill("black")
-        draw_game(screen, game, alpha)
+        draw_game(screen, game.game, alpha)
         
-        text_surface = font.render(f"Total steps {steps} | Steps without eating {steps_no_eat}", True, (255, 255, 255))
+        text_surface = font.render(f"Total steps {steps} | Steps without eating {game.steps_without_eating}", True, (255, 255, 255))
         screen.blit(text_surface, (0, 0))
         
         pg.display.flip()
         dt = clock.tick(60) / 1000
         
-    print(f"{model_name} final score: {game.score}")
+    print(f"{model_name} final score: {game.game.score}")
+    
+    print("Last state before end")
+    print(prev_state)
+    
+    print("Snake direction")
+    print(game.game.direction)
+    
+    print("Action taken")
+    print(RELATIVE_ACTIONS[ai.get_action(prev_state)])
+    
+    print("Final state")
+    print(game.game.get_state())
       
     pg.quit()
     
     
 if __name__ == '__main__':
-    directory = Path("models")
+    directory = Path("snake/models")
     models = list(directory.iterdir())
     for model in models:
         if model.suffix != ".npy":
@@ -84,6 +88,6 @@ if __name__ == '__main__':
         
         np.random.seed(42)
         best_model = np.load(model)
-        best_ai = SnakeAI()
+        best_ai = SnakeAI(24, 32, 3)
         best_ai.set_weights(best_model)
         test(best_ai, model.name)
