@@ -1,4 +1,5 @@
 import os
+import random
 from typing import Type, Callable
 from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
@@ -34,33 +35,51 @@ class GeneticAlgorithm:
         self.avg_fitnesses: list[float] = []
         
     @staticmethod
-    def play(ai: NeuralNetwork, env_type: Type[Environment]) -> float:
+    def play(ai: NeuralNetwork, env_type: Type[Environment], num_trials: int = 40) -> float:
         """ Make the AI do actions in the environment until termination """
-        env = env_type()
-        state = env.reset()
-        total_reward = 0
-        done = False
+        rewards: list[float] = []
         
-        while not done:
-            action_idx = ai.get_action(state)
-            state, reward, done = env.step(action_idx)
-            total_reward += reward
+        for _ in range(num_trials):
+            env = env_type()
+            state = env.reset()
+            total_reward = 0
+            done = False
             
-        return total_reward
+            while not done:
+                action_idx = ai.get_action(state)
+                state, reward, done = env.step(action_idx)
+                total_reward += reward
+            
+            rewards.append(total_reward)
+            
+        return float(0.7 * np.median(rewards) + 0.3 * np.max(rewards))
         
     def evaluate(self) -> None:
         """ Evaluate an AI on multiple samples """
         for ai in self.population:
-            scores: list[float] = []
-            for _ in range(10):
-                score = self.play(ai, self.env)
-                scores.append(score)
-            ai.fitness = np.maximum(0.0, np.mean(scores).astype(float))
+            ai.fitness = self.play(ai, self.env)
     
     def selection(self) -> list[NeuralNetwork]:
         """ Select best AIs during this generation """
+        parents = []
+        
+        # Elitism
+        elite_ratio = 0.02
         self.population.sort(key=lambda x: x.fitness, reverse=True)
-        return self.population[:self.population_size // 2]
+        # print([int(pop.fitness) for pop in self.population])
+        n_elites = max(1, int(self.population_size * elite_ratio))
+        elites = self.population[:n_elites]
+        parents.extend(elites)
+        
+        # Tournament selection
+        tournament_size = 2
+        tournament_ratio = 0.5
+        while len(parents) < int(tournament_ratio * self.population_size):
+            candidates = random.sample(self.population, k=tournament_size) #np.random.choice(self.population, size=tournament_size, replace=False)
+            winner = max(candidates, key=lambda x: x.fitness)
+            parents.append(winner)
+        
+        return [deepcopy(p) for p in parents] # parents
     
     def crossover(self, p1: NeuralNetwork, p2: NeuralNetwork) -> NeuralNetwork:
         """ Crossover to create new generation """
@@ -69,96 +88,85 @@ class GeneticAlgorithm:
         w1 = p1.get_weights()
         w2 = p2.get_weights()
         
-        mask = np.random.rand(len(w1)) < 0.5
-        child_weights = np.where(mask, w1, w2)
-        child.set_weights(child_weights)
+        # Multi-point crossover
+        n_points = 3
+        points = sorted(np.random.choice(len(w1), n_points, replace=False))
+        child_weights = w1.copy()
+        use_p2 = False
+        prev_point = 0
         
+        for point in points:
+            if use_p2:
+                child_weights[prev_point:point] = w2[prev_point:point]
+            use_p2 = not use_p2
+            prev_point = point
+        if use_p2:
+            child_weights[prev_point:] = w2[prev_point:]
+        
+        child.set_weights(child_weights)
         return child
     
     def mutate(self, ai: NeuralNetwork) -> None:
         """ Add mutation i.e. randomly change weights """
         weights = ai.get_weights()
-        mask = np.random.rand(len(weights)) < self.mutation_rate
-        weights[mask] += np.random.randn(np.sum(mask.astype(int))) * self.mutation_strength 
+        
+        # Gaussian mutation
+        mask = np.random.rand(weights.size) < self.mutation_rate
+        weights[mask] += np.random.randn(mask.sum()) * self.mutation_strength
         
         ai.set_weights(weights)
         
-    def evolve(self) -> NeuralNetwork:
-        """ Create the new generation """
-        self.evaluate()
-        parents = self.selection()
-        new_pop = deepcopy(parents)
-        
-        while len(new_pop) < self.population_size:
-            i1 = np.random.randint(0, len(parents), size=6)
-            p1 = parents[np.min(i1)]
-            
-            i2 = np.random.randint(0, len(parents), size=6)
-            p2 = parents[np.min(i2)]
-            
-            child = self.crossover(p1, p2)
-            self.mutate(child)
-            new_pop.append(child)
-            
-        self.population = new_pop
-        self.generation += 1
-        
-        best_fitness = parents[0].fitness
-        avg_fitness = np.mean([ai.fitness for ai in parents])
-        
-        self.best_fitnesses.append(best_fitness)
-        self.avg_fitnesses.append(avg_fitness.astype(float))
-        
-        print(f"Gen {self.generation} | Best Fitness {best_fitness:.1f} | Avg Fitness {avg_fitness:.1f}")
-        return parents[0]
-    
-    def evolve_parallel(self) -> NeuralNetwork:
+    def evolve(self, parallel: bool = False) -> NeuralNetwork:
         """ Create the new generation """
         # Evaluate
-        with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
-            worker = partial(GeneticAlgorithm.play, env_type=self.env)
-            fitnesses = list(executor.map(worker, self.population))
-            
-        for indiv, fitness in zip(self.population, fitnesses):
-            indiv.fitness = max(0.0, fitness)
-            
+        if parallel:
+            max_workers = os.cpu_count() or 1
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                worker = partial(GeneticAlgorithm.play, env_type=self.env)
+                fitnesses = list(executor.map(worker, self.population))
+                
+            for indiv, fitness in zip(self.population, fitnesses):
+                indiv.fitness = fitness
+        else:
+            self.evaluate()
+        
         # Selection
         parents = self.selection()
-        new_pop = deepcopy(parents)
+        new_pop = parents.copy() # deepcopy(parents)
         
         # Crossover + Mutation
-        while len(new_pop) < self.population_size:
-            i1 = np.random.randint(0, len(parents), size=6)
-            p1 = parents[np.min(i1)]
-            
-            i2 = np.random.randint(0, len(parents), size=6)
-            p2 = parents[np.min(i2)]
+        offspring_ratio = 0.85
+        tournament_size = 3
+        while len(new_pop) < int(offspring_ratio * self.population_size):
+            p1 = max(random.sample(parents, k=tournament_size), key=lambda x: x.fitness) # np.random.choice(parents, size=tournament_size)
+            p2 = p1
+            while p2 == p1:
+                p2 = max(random.sample(parents, k=tournament_size), key=lambda x: x.fitness)
             
             child = self.crossover(p1, p2)
             self.mutate(child)
             new_pop.append(child)
             
+        # Introduce random new individuals
+        while len(new_pop) < self.population_size:
+            new_ai = self.nn_factory()
+            new_pop.append(new_ai)
+            
         self.population = new_pop
         self.generation += 1
         
-        best_ai = max(self.population, key=lambda ai: ai.fitness)
-        best_fitness = best_ai.fitness
+        best_parent = max(parents, key=lambda x: x.fitness)
+        best_fitness = best_parent.fitness # parents[0].fitness
         avg_fitness = np.mean([ai.fitness for ai in parents])
         
         self.best_fitnesses.append(best_fitness)
-        self.avg_fitnesses.append(avg_fitness.astype(float))
+        self.avg_fitnesses.append(float(avg_fitness))
         
         print(f"Gen {self.generation} | Best Fitness {best_fitness:.1f} | Avg Fitness {avg_fitness:.1f}")
-        return best_ai     
         
+        # Reset fitness
+        for ai in new_pop:
+            ai.fitness = 0 # None
         
-if __name__ == '__main__':
-    # import sys
-    # from pathlib import Path
-    
-    # project_root = Path(__file__).parent.parent
-    # sys.path.insert(0, str(project_root))
-    pass
-    
-    
+        return best_parent
         

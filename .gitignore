@@ -18,3 +18,5 @@ build/
 
 
 old_models
+snake/models/*.npy
+snake/models/training.svg
