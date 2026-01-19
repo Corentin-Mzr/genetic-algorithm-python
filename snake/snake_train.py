@@ -5,6 +5,6 @@ from pathlib import Path
 
 if __name__ == '__main__':
     def snake_factory() -> SnakeAI:
-        return SnakeAI(input_size=SnakeGameWrapper().input_size, hidden_size=24, output_size=SnakeGameWrapper().output_size)
+        return SnakeAI(input_size=SnakeGameWrapper().input_size, hidden_size=7, output_size=SnakeGameWrapper().output_size)
     
-    train(SnakeGameWrapper, snake_factory, 200, 256, 0.1, 0.05, save_folder="snake/models")
+    train(SnakeGameWrapper, snake_factory, 100, 256, 0.1, 0.05, save_folder="snake/models", save_rate=0.2)

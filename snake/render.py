@@ -1,6 +1,7 @@
 import pygame as pg
+import numpy as np
 
-from snake_game import SnakeGame
+from snake_game import SnakeGame, GameObject
 from constants import *
 
 def clear(screen: pg.Surface) -> None:
@@ -62,3 +63,26 @@ def draw_game(screen: pg.Surface, game: SnakeGame, alpha: float) -> None:
     draw_apple(screen, game)
 
     draw_snake(screen, game, alpha)  
+
+def draw_state(screen: pg.Surface, state: np.ndarray) -> None:
+    clear(screen)
+    
+    for y in range(GRID_HEIGHT):
+        for x in range(GRID_WIDTH):
+            cell_value = state[y, x]
+            if cell_value == GameObject.AIR.value:
+                continue
+            elif cell_value == GameObject.SNAKE.value:
+                color = COLOR_SNAKE
+            elif cell_value == GameObject.APPLE.value:
+                color = COLOR_APPLE
+            else:
+                continue
+            
+            pg.draw.rect(
+                screen,
+                color,
+                (x * CELL_SIZE_X, y * CELL_SIZE_Y, CELL_SIZE_X, CELL_SIZE_Y),
+            )
+            
+    draw_grid(screen)
