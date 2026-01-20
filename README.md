@@ -4,6 +4,10 @@
 
 This project aims to test the genetic algorithm method to play games, such as the Snake game. The method will be used to train neural networks.
 
+[snake.webm](https://github.com/user-attachments/assets/d870d68b-49d6-4ca8-86ba-721349757b54)
+
+![training example](example/snake_training.svg)
+
 ## What is a Genetic Algorithm ?
 
 A genetic algorithm (GA) is a type of evolutionary algorithms inspired by the process of natural selection. Genetic algorithms are commonly used to generate solutions to optimization and search problems via biologically inspired technics: selection, crossover and mutation.
