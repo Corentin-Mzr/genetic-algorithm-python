@@ -6,7 +6,7 @@ class NeuralNetwork(ABC):
     fitness: float = 0.0
     
     @abstractmethod
-    def __init__(self, input_size: int, hidden_size: int, output_size: int):
+    def __init__(self, input_size: int, output_size: int, *args, **kwargs):
         pass
     
     @abstractmethod

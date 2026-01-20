@@ -30,7 +30,7 @@ class SnakeTestResult:
     rewards: list[float]
     steps: int
     
-def test(ai: SnakeAI, model_name: str, num_trials: int = 10) -> SnakeTestResult:
+def test(ai: SnakeAI, model_name: str, num_trials: int = 50) -> SnakeTestResult:
     env = SnakeGameWrapper()
     best_score = -1
     best_grids = []

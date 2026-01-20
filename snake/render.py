@@ -5,10 +5,12 @@ from snake_game import SnakeGame, GameObject
 from constants import *
 
 def clear(screen: pg.Surface) -> None:
+    """ Clear the screen """
     screen.fill(DARK_BLUE)
 
 
 def draw_apple(screen: pg.Surface, game: SnakeGame) -> None:
+    """ Draw an apple on the screen """
     ay, ax = game.apple
     pg.draw.rect(
         screen,
@@ -18,6 +20,7 @@ def draw_apple(screen: pg.Surface, game: SnakeGame) -> None:
 
 
 def draw_snake(screen: pg.Surface, game: SnakeGame, alpha: float) -> None:
+    """ Draw the snake on the screen """
     snake_length: int = len(game.snake)
     
     for i, (y, x) in enumerate(game.snake):
@@ -50,12 +53,14 @@ def draw_snake(screen: pg.Surface, game: SnakeGame, alpha: float) -> None:
 
 
 def draw_grid(screen: pg.Surface):
+    """ Draw a grid on the screen """
     for x in range(0, WINDOW_WIDTH, CELL_SIZE_X):
         for y in range(0, WINDOW_HEIGHT, CELL_SIZE_Y):
             rect = pg.Rect(x, y, CELL_SIZE_X, CELL_SIZE_Y)
             pg.draw.rect(screen, GREY, rect, 1)
 
 def draw_game(screen: pg.Surface, game: SnakeGame, alpha: float) -> None:
+    """ Draw the entire game """
     clear(screen)
     
     draw_grid(screen)
@@ -65,6 +70,7 @@ def draw_game(screen: pg.Surface, game: SnakeGame, alpha: float) -> None:
     draw_snake(screen, game, alpha)  
 
 def draw_state(screen: pg.Surface, state: np.ndarray) -> None:
+    """ Draw the game from a 2d array """
     clear(screen)
     
     for y in range(GRID_HEIGHT):

@@ -122,6 +122,6 @@ class SnakeAI(NeuralNetwork):
         self.b3 = weights[idx:]
 
 if __name__ == '__main__':
-    ai = SnakeAI(26, 8, 3)
+    ai = SnakeAI(26, 7, 3)
     weights = ai.get_weights()
-    print(len(weights), weights.size)
+    print(weights)

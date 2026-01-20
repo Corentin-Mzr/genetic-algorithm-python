@@ -35,7 +35,7 @@ class GeneticAlgorithm:
         self.avg_fitnesses: list[float] = []
         
     @staticmethod
-    def play(ai: NeuralNetwork, env_type: Type[Environment], num_trials: int = 40) -> float:
+    def play(ai: NeuralNetwork, env_type: Type[Environment], num_trials: int) -> float:
         """ Make the AI do actions in the environment until termination """
         rewards: list[float] = []
         
@@ -54,10 +54,10 @@ class GeneticAlgorithm:
             
         return float(0.7 * np.median(rewards) + 0.3 * np.max(rewards))
         
-    def evaluate(self) -> None:
+    def evaluate(self, num_trials: int) -> None:
         """ Evaluate an AI on multiple samples """
         for ai in self.population:
-            ai.fitness = self.play(ai, self.env)
+            ai.fitness = self.play(ai, self.env, num_trials)
     
     def selection(self) -> list[NeuralNetwork]:
         """ Select best AIs during this generation """
@@ -116,29 +116,29 @@ class GeneticAlgorithm:
         
         ai.set_weights(weights)
         
-    def evolve(self, parallel: bool = False) -> NeuralNetwork:
+    def evolve(self, num_trials: int = 40, parallel: bool = False) -> NeuralNetwork:
         """ Create the new generation """
         # Evaluate
         if parallel:
             max_workers = os.cpu_count() or 1
             with ProcessPoolExecutor(max_workers=max_workers) as executor:
-                worker = partial(GeneticAlgorithm.play, env_type=self.env)
+                worker = partial(GeneticAlgorithm.play, env_type=self.env, num_trials=num_trials)
                 fitnesses = list(executor.map(worker, self.population))
                 
             for indiv, fitness in zip(self.population, fitnesses):
                 indiv.fitness = fitness
         else:
-            self.evaluate()
+            self.evaluate(num_trials)
         
         # Selection
         parents = self.selection()
-        new_pop = parents.copy() # deepcopy(parents)
+        new_pop = parents.copy()
         
         # Crossover + Mutation
         offspring_ratio = 0.85
         tournament_size = 3
         while len(new_pop) < int(offspring_ratio * self.population_size):
-            p1 = max(random.sample(parents, k=tournament_size), key=lambda x: x.fitness) # np.random.choice(parents, size=tournament_size)
+            p1 = max(random.sample(parents, k=tournament_size), key=lambda x: x.fitness)
             p2 = p1
             while p2 == p1:
                 p2 = max(random.sample(parents, k=tournament_size), key=lambda x: x.fitness)
@@ -156,7 +156,7 @@ class GeneticAlgorithm:
         self.generation += 1
         
         best_parent = max(parents, key=lambda x: x.fitness)
-        best_fitness = best_parent.fitness # parents[0].fitness
+        best_fitness = best_parent.fitness
         avg_fitness = np.mean([ai.fitness for ai in parents])
         
         self.best_fitnesses.append(best_fitness)

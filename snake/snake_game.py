@@ -163,23 +163,22 @@ class SnakeGame:
     def _spawn_snake(self) -> Position:
         """ Returns a random position for the initial snake head position """
         # Dont spawn close to walls
-        x = np.random.randint(int(0.25 * GRID_WIDTH), int(0.75 * GRID_WIDTH))
-        y = np.random.randint(int(0.25 * GRID_HEIGHT), int(0.75 * GRID_HEIGHT))
+        s = 0.2
+        x = np.random.randint(int(s * GRID_WIDTH), int((1.0 - s) * GRID_WIDTH))
+        y = np.random.randint(int(s * GRID_HEIGHT), int((1.0 - s) * GRID_HEIGHT))
         return (y, x)
     
     def _spawn_apple(self) -> Position:
         """ Returns a random position for the apple"""
         if self.first_apple_spawn:
-            min_f = 0.25
-            max_f = 0.75
+            s = 0.2
             self.first_apple_spawn = False
         else:
-            min_f = 0
-            max_f = 1.0
+            s = 0
         
         while True:
-            x = np.random.randint(int(min_f * GRID_WIDTH), int(max_f * GRID_WIDTH))
-            y = np.random.randint(int(min_f * GRID_HEIGHT), int(max_f * GRID_HEIGHT))
+            x = np.random.randint(int(s * GRID_WIDTH), int((1.0 - s) * GRID_WIDTH))
+            y = np.random.randint(int(s * GRID_HEIGHT), int((1.0 - s) * GRID_HEIGHT))
             
             if (y, x) not in self.snake_set:
                 return (y, x)
@@ -344,44 +343,3 @@ if __name__ == '__main__':
     
     print("\nTESTS OK")
     
-    
-    
-    # @dataclass
-# class GameState:
-#     # Ray = [inv_dist_wall, inv_dist_body, inv_dist_apple]
-#     # 8 x 3 = 24 inputs
-#     ray_up: Ray
-#     ray_up_right: Ray
-#     ray_right: Ray
-#     ray_down_right: Ray
-#     ray_down: Ray
-#     ray_down_left: Ray
-#     ray_left: Ray
-#     ray_up_left: Ray
-    
-#     # 2 inputs
-#     # apple: PositionFloat
-    
-#     # 1 input
-#     apple: float
-    
-#     def to_array(self) -> np.ndarray:
-#         return np.concatenate([
-#             self.ray_up, self.ray_up_right, 
-#             self.ray_right, self.ray_down_right, 
-#             self.ray_down, self.ray_down_left, 
-#             self.ray_left, self.ray_up_left,
-#             [self.apple],
-#         ], dtype=np.float32)
-    
-    
-    
-        # directions = RELATIVE_VISION_DIRS[self.direction]
-        # rays = [get_ray(dir) for dir in directions]
-        
-        # sy, sx = self.snake[0]
-        # ay, ax = self.apple
-        # apple = ((ay - sy) / GRID_HEIGHT, (ax - sx) / GRID_WIDTH)
-        # apple = (abs(ay - sy) + abs(ax - sx)) / (GRID_WIDTH + GRID_HEIGHT)
-        
-        # state = GameState(*rays, apple=apple)

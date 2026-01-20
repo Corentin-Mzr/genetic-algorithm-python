@@ -2,7 +2,7 @@ import numpy as np
 
 from core.environment import Environment, Observation
 from snake_game import SnakeGame, Position, Direction
-from snake_game import GRID_WIDTH, GRID_HEIGHT, RELATIVE_ACTIONS, ABSOLUTE_TO_RELATIVE, LEFT_DIRECTIONS, RIGHT_DIRECTIONS, DirectionRelative
+from snake_game import GRID_WIDTH, GRID_HEIGHT, RELATIVE_ACTIONS, ABSOLUTE_TO_RELATIVE
 
 from copy import deepcopy
 
@@ -125,21 +125,21 @@ class SnakeGameWrapper(Environment):
         self.game.move_relative(action)
         
         # Reward if danger is reduced, reward more if snake is long
-        new_danger = self._count_danger_moves(self.game.direction, self.game.snake, self.game.just_ate)
+        # new_danger = self._count_danger_moves(self.game.direction, self.game.snake, self.game.just_ate)
         # if new_danger < current_danger:
         #     danger_level = current_danger / len(RELATIVE_ACTIONS)
         #     avoidance_reward = 20 + 2 * danger_level * len(self.game.snake) ** 1.2
-        avoidance_reward = -20 * new_danger
+        # avoidance_reward = -20 * new_danger
         
         # Must be efficient
-        # efficiency_penalty = -1.0
+        # efficiency_penalty = -0.1 * self.game.steps_without_eating # -1.0
         
         # Eating is good
         if self.game.just_ate:
             eating_reward = (50 + 10 * self.game.score ** 2) * (1 / (1 + self.game.steps_without_eating ** 0.5))
         
         # Starvation is bad
-        if self.game.steps_without_eating > 50 + 5 * len(self.game.snake):
+        if self.game.steps_without_eating > 50 + 2 * len(self.game.snake):
             done = True
             starvation_penalty = -50
 
@@ -155,7 +155,7 @@ class SnakeGameWrapper(Environment):
          
         # Curriculum learning    
         if done:
-            curriculum_reward = self.game.score * 20 # - 1.25 * self.steps_without_eating
+            curriculum_reward = self.game.score * 20
             
         # Total reward
         reward = avoidance_reward + eating_reward + efficiency_penalty + starvation_penalty + collision_penalty + winning_reward + curriculum_reward
@@ -165,4 +165,6 @@ class SnakeGameWrapper(Environment):
     
 if __name__ == '__main__':
     wrapper = SnakeGameWrapper()
+    state = wrapper.reset()
+    print(state)
     
