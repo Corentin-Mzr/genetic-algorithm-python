@@ -10,7 +10,7 @@ from copy import deepcopy
 class SnakeGameWrapper(Environment):
     def __init__(self):
         self.game = SnakeGame()
-        self.generation = 0
+        self.danger = self._count_danger_moves(self.game.direction, self.game.snake, self.game.just_ate)
         
     @property
     def input_size(self) -> int:
@@ -22,7 +22,7 @@ class SnakeGameWrapper(Environment):
     
     def _generate_random_snake(self) -> list[Position]:
         """ Generate a snake of random size in a random position """
-        length = np.random.randint(1, min(self.generation // 4 + 2, GRID_WIDTH * GRID_HEIGHT // 2))
+        length = np.random.randint(1, GRID_WIDTH * GRID_HEIGHT // 2)
         head_x = np.random.randint(0, GRID_WIDTH)
         head_y = np.random.randint(0, GRID_HEIGHT)
         
@@ -58,22 +58,6 @@ class SnakeGameWrapper(Environment):
         if not (0 <= y < GRID_HEIGHT and 0 <= x < GRID_WIDTH):
             return True
         return pos in snake[:-1] if not just_ate else pos in snake
-    
-    # def _predict_position(self, action: Direction) -> Position:
-    #     """ Predict the new head position after taking the given action"""
-    #     y, x = self.game.snake[0]
-    #     dy, dx = DIRECTION_TO_POSITION[action]
-    #     return (y + dy, x + dx)
-    
-    # def _count_danger_moves(self, head: Position) -> int:
-    #     """ Count the number of moves that would result in a collision, starting from the given head position"""
-    #     danger = 0
-    #     for action in ABSOLUTE_ACTIONS:
-    #         dy, dx = DIRECTION_TO_POSITION[action]
-    #         ny, nx = head[0] + dy, head[1] + dx
-    #         if self._will_colide((ny, nx)):
-    #             danger += 1
-    #     return danger
     
     def _count_danger_moves(self, direction: Direction, snake: list[Position], just_ate: bool) -> int:
         """ Based on given position and direction, count the number of moves that would result in a collision next turn """
@@ -113,6 +97,7 @@ class SnakeGameWrapper(Environment):
     
     def reset(self) -> np.ndarray:
         self.game = SnakeGame()
+        self.danger = self._count_danger_moves(self.game.direction, self.game.snake, self.game.just_ate)
         return self.game.get_state().to_array()
     
     def step(self, action_idx: int) -> Observation:
@@ -129,31 +114,29 @@ class SnakeGameWrapper(Environment):
         winning_reward = 0
         curriculum_reward = 0
         
-        # # Avoidance reward
+        # Avoidance reward
         # current_danger = self._count_danger_moves(self.game.direction, self.game.snake, self.game.just_ate)
-        # if action == DirectionRelative.LEFT:
-        #     new_direction = LEFT_DIRECTIONS[self.game.direction]
-        # elif action == DirectionRelative.RIGHT:
-        #     new_direction = RIGHT_DIRECTIONS[self.game.direction]
-        # else:
-        #     new_direction = self.game.direction
-        # new_snake, new_ate = self._simulate_move(new_direction)
-        # new_danger = self._count_danger_moves(new_direction, new_snake, new_ate)
-        
-        # # Reward if danger is reduced, reward more if snake is long
-        # if new_danger < current_danger:
-        #     danger_level = current_danger / len(RELATIVE_ACTIONS)
-        #     avoidance_reward = 10 * danger_level + 2 * len(self.game.snake) ** 1.2
+        # if current_danger < self.danger:
+        #     danger_level = self.danger / len(RELATIVE_ACTIONS)
+        #     avoidance_reward = 20 + 2 * danger_level * len(self.game.snake) ** 1.2
+        # self.danger = current_danger
         
         # Move
         self.game.move_relative(action)
+        
+        # Reward if danger is reduced, reward more if snake is long
+        new_danger = self._count_danger_moves(self.game.direction, self.game.snake, self.game.just_ate)
+        # if new_danger < current_danger:
+        #     danger_level = current_danger / len(RELATIVE_ACTIONS)
+        #     avoidance_reward = 20 + 2 * danger_level * len(self.game.snake) ** 1.2
+        avoidance_reward = -20 * new_danger
         
         # Must be efficient
         # efficiency_penalty = -1.0
         
         # Eating is good
         if self.game.just_ate:
-            eating_reward = (50 + 10 * self.game.score ** 2) * (1 / (1 + self.game.steps_without_eating))
+            eating_reward = (50 + 10 * self.game.score ** 2) * (1 / (1 + self.game.steps_without_eating ** 0.5))
         
         # Starvation is bad
         if self.game.steps_without_eating > 50 + 5 * len(self.game.snake):
@@ -172,19 +155,7 @@ class SnakeGameWrapper(Environment):
          
         # Curriculum learning    
         if done:
-            curriculum_reward = self.game.score * 100 # - 1.25 * self.steps_without_eating
-            self.generation += 1
-            
-        # reward_dict = {
-        #     "avoidance_reward": avoidance_reward,
-        #     "eating_reward": eating_reward,
-        #     "efficiency_penalty": efficiency_penalty,
-        #     "starvation_penalty": starvation_penalty,
-        #     "collision_penalty": collision_penalty,
-        #     "winning_reward": winning_reward,
-        #     "curriculum_reward": curriculum_reward
-        # }
-        # print(reward_dict)
+            curriculum_reward = self.game.score * 20 # - 1.25 * self.steps_without_eating
             
         # Total reward
         reward = avoidance_reward + eating_reward + efficiency_penalty + starvation_penalty + collision_penalty + winning_reward + curriculum_reward
@@ -194,102 +165,4 @@ class SnakeGameWrapper(Environment):
     
 if __name__ == '__main__':
     wrapper = SnakeGameWrapper()
-        
-        
-    # self.game.snake = self._generate_random_snake()
-        
-        
-    # def _predict_position(self, action: DirectionRelative) -> Position:
-    #     y, x = self.game.snake[0]
-    #     dy, dx = DIRECTION_TO_RELATIVE[self.game.direction][action]
-    #     return (y + dy, x + dx)
     
-    # def _next_direction(self, current: Direction, action: DirectionRelative) -> Direction:
-    #     if action == DirectionRelative.STRAIGHT:
-    #         return LEFT_DIRECTIONS[current]
-    #     if action == DirectionRelative.LEFT:
-    #         return RIGHT_DIRECTIONS[current]
-    #     return current
-    
-    # def _count_danger_moves(self, head: Position, direction: Direction) -> int:
-    #     danger = 0
-    #     for action in RELATIVE_ACTIONS:
-    #         dy, dx = DIRECTION_TO_RELATIVE[direction][action]
-    #         ny, nx = head[0] + dy, head[1] + dx
-    #         if self._will_colide((ny, nx)):
-    #             danger += 1
-    #     return danger
-    
-    
-        # current_direction = self.game.direction
-        # current_danger = self._count_danger_moves(current_head, current_direction)
-        # danger_level = current_danger / len(RELATIVE_ACTIONS)
-        
-        # Simulate action
-        # new_direction = self._next_direction(current_direction, action)
-        # dy, dx = DIRECTION_TO_RELATIVE[current_direction][action]
-    
-    
-    
-    # action = RELATIVE_ACTIONS[action_idx]
-    
-    
-        # Check current danger
-        # current_danger_actions = 0
-        # for action in RELATIVE_ACTIONS:
-        #     ny, nx = self._predict_position(action)
-        #     if self._will_colide((ny, nx)):
-        #         current_danger_actions += 1
-                
-        # in_danger = current_danger_actions >= 2
-        # danger_level = current_danger_actions / len(RELATIVE_ACTIONS)
-        
-        # # Compare to future danger
-        # new_danger_actions = 0
-        # new_direction = RELATIVE_ACTIONS[action_idx]
-        # ny, nx = self._predict_position(new_direction)
-        # for action in RELATIVE_ACTIONS:
-        #     dy, dx = DIRECTION_TO_RELATIVE[self.game.direction][action]
-        #     nny, nnx = ny + dy, nx + dx
-        #     if self._will_colide((nny, nnx)):
-        #         new_danger_actions += 1
-        
-        # danger_avoided = not self._will_colide((ny, nx))
-        # danger_reduced = new_danger_actions < current_danger_actions
-        
-        # # When snake is long, avoiding danger should be rewarded more
-        # if in_danger and danger_avoided and danger_reduced:
-        #     avoidance_reward = 10 * danger_level + 2 * len(self.game.snake) ** 1.2
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        # Current state
-        # current_head = self.game.snake[0]
-        # current_danger = self._count_danger_moves(current_head)
-        # danger_level = current_danger / len(ABSOLUTE_ACTIONS)
-        # dy, dx = DIRECTION_TO_POSITION[action]
-        # new_head = (current_head[0] + dy, current_head[1] + dx)
-        
-        # if not self._will_colide(new_head):
-        #     new_danger = self._count_danger_moves(new_head)
-            
-        #     # Mobility increased
-        #     if new_danger < current_danger:
-        #         avoidance_reward = 5 + 2 * danger_level * (current_danger - new_danger)
-            
-        #     # Escape tight spaces
-        #     if current_danger >= 2 and new_danger <= 1:
-        #         avoidance_reward += 5
-                
-        #     # Length scaling
-        #     avoidance_reward *= (1 + 0.5 * len(self.game.snake) ** 1.1)

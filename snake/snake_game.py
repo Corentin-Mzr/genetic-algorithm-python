@@ -7,8 +7,9 @@ from constants import GRID_WIDTH, GRID_HEIGHT, Position
 
 class GameObject(Enum):
     AIR = 0
-    SNAKE = 1
-    APPLE = 2
+    SNAKE_HEAD = 1
+    SNAKE_BODY = 2
+    APPLE = 3
 
 class Direction(Enum):
     UP = 1
@@ -150,8 +151,12 @@ class SnakeGame:
         
         # Handle only valid snake positions    
         for y, x in self.snake:
-            if 0 <= y < GRID_HEIGHT and 0 <= x < GRID_WIDTH:
-                grid[y, x] = GameObject.SNAKE.value
+            if not (0 <= y < GRID_HEIGHT and 0 <= x < GRID_WIDTH):
+                continue
+            if (y, x) != self.snake[0]:
+                grid[y, x] = GameObject.SNAKE_BODY.value
+            else: 
+                grid[y, x] = GameObject.SNAKE_HEAD.value
             
         return grid 
     

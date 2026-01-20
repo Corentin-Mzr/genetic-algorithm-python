@@ -28,11 +28,11 @@ def draw_snake(screen: pg.Surface, game: SnakeGame, alpha: float) -> None:
             
         gradient_factor = i / max(snake_length - 1, 1)
         
-        head_color = COLOR_SNAKE  # Brightest color at head
+        head_color = COLOR_SNAKE_HEAD  # Brightest color at head
         tail_color = (
-            COLOR_SNAKE[0] // 3,  # Darker red
-            COLOR_SNAKE[1] // 3,  # Darker green
-            COLOR_SNAKE[2] // 3   # Darker blue
+            COLOR_SNAKE_HEAD[0] // 3,  # Darker red
+            COLOR_SNAKE_HEAD[1] // 3,  # Darker green
+            COLOR_SNAKE_HEAD[2] // 3   # Darker blue
         )
         
         # Interpolate between head and tail colors
@@ -72,8 +72,10 @@ def draw_state(screen: pg.Surface, state: np.ndarray) -> None:
             cell_value = state[y, x]
             if cell_value == GameObject.AIR.value:
                 continue
-            elif cell_value == GameObject.SNAKE.value:
-                color = COLOR_SNAKE
+            elif cell_value == GameObject.SNAKE_HEAD.value:
+                color = COLOR_SNAKE_HEAD
+            elif cell_value == GameObject.SNAKE_BODY.value:
+                color = COLOR_SNAKE_BODY
             elif cell_value == GameObject.APPLE.value:
                 color = COLOR_APPLE
             else:
