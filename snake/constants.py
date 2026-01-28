@@ -1,7 +1,4 @@
-# Types
-Color = tuple[int, int, int]
-Position = tuple[int, int]
-Shape = tuple[int, int]
+from snake.types import Color
 
 # Window
 WINDOW_WIDTH: int = 600
@@ -11,6 +8,7 @@ WINDOW_TITLE: str = "Snake"
 # Game
 GRID_WIDTH: int = 10
 GRID_HEIGHT: int = 10
+GRID_AREA: int = GRID_WIDTH * GRID_HEIGHT
 DELTA_TIME: float = 1.0 / 5.0
 
 # Colors

@@ -1,8 +1,8 @@
 import pygame as pg
 
-from render import draw_game
-from snake_game import SnakeGame, Direction
-from constants import *
+from snake.render import draw_game
+from snake.game import SnakeGame, Direction
+from snake.constants import *
 
 def main() -> None:
     # Pygame setup

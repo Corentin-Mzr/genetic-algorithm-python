@@ -1,19 +1,29 @@
 import os
 import random
-from typing import Type, Callable
+from typing import Type
 from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
 from functools import partial
+from dataclasses import dataclass
 
 import numpy as np
 
 from core.environment import Environment
 from core.neural_network import NeuralNetwork
+from core.types import NNFactoryFunc
 
-NNFactoryFunc = Callable[[], NeuralNetwork]
-FitnessFunc = Callable[[Environment, NeuralNetwork], float]
+# np.random.seed(os.getpid())
 
-np.random.seed(os.getpid())
+@dataclass
+class GATrainConfig:
+    num_trials: int
+    parallel: bool
+    elite_ratio: float
+    tournament_size: int
+    tournament_ratio: float
+    crossover_points: int
+    offspring_ratio: float
+    
 
 class GeneticAlgorithm:
     def __init__(self, 
@@ -27,12 +37,23 @@ class GeneticAlgorithm:
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.mutation_strength = mutation_strength
+        
         self.generation: int = 0
         
         self.population: list[NeuralNetwork] = [self.nn_factory() for _ in range(population_size)]
 
         self.best_fitnesses: list[float] = []
         self.avg_fitnesses: list[float] = []
+        
+        self.executor: ProcessPoolExecutor | None = None
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.executor is not None:
+            self.executor.shutdown(wait=True)
+            self.executor = None
         
     @staticmethod
     def play(ai: NeuralNetwork, env_type: Type[Environment], num_trials: int) -> float:
@@ -59,29 +80,28 @@ class GeneticAlgorithm:
         for ai in self.population:
             ai.fitness = self.play(ai, self.env, num_trials)
     
-    def selection(self) -> list[NeuralNetwork]:
+    def selection(self, elite_ratio: float, tournament_size: int, tournament_ratio: float) -> list[NeuralNetwork]:
         """ Select best AIs during this generation """
-        parents = []
+        parents: list[NeuralNetwork] = []
         
         # Elitism
-        elite_ratio = 0.02
+        # elite_ratio = 0.02
         self.population.sort(key=lambda x: x.fitness, reverse=True)
-        # print([int(pop.fitness) for pop in self.population])
         n_elites = max(1, int(self.population_size * elite_ratio))
         elites = self.population[:n_elites]
         parents.extend(elites)
         
         # Tournament selection
-        tournament_size = 2
-        tournament_ratio = 0.5
+        # tournament_size = 2
+        # tournament_ratio = 0.5
         while len(parents) < int(tournament_ratio * self.population_size):
-            candidates = random.sample(self.population, k=tournament_size) #np.random.choice(self.population, size=tournament_size, replace=False)
+            candidates = random.sample(self.population, k=tournament_size)
             winner = max(candidates, key=lambda x: x.fitness)
             parents.append(winner)
         
         return [deepcopy(p) for p in parents] # parents
     
-    def crossover(self, p1: NeuralNetwork, p2: NeuralNetwork) -> NeuralNetwork:
+    def crossover(self, p1: NeuralNetwork, p2: NeuralNetwork, n_points: int) -> NeuralNetwork:
         """ Crossover to create new generation """
         child = self.nn_factory()
         
@@ -89,7 +109,7 @@ class GeneticAlgorithm:
         w2 = p2.get_weights()
         
         # Multi-point crossover
-        n_points = 3
+        # n_points = 3
         points = sorted(np.random.choice(len(w1), n_points, replace=False))
         child_weights = w1.copy()
         use_p2 = False
@@ -116,34 +136,37 @@ class GeneticAlgorithm:
         
         ai.set_weights(weights)
         
-    def evolve(self, num_trials: int = 40, parallel: bool = False) -> NeuralNetwork:
+    def evolve(self, config: GATrainConfig) -> NeuralNetwork:
         """ Create the new generation """
         # Evaluate
-        if parallel:
-            max_workers = os.cpu_count() or 1
-            with ProcessPoolExecutor(max_workers=max_workers) as executor:
-                worker = partial(GeneticAlgorithm.play, env_type=self.env, num_trials=num_trials)
-                fitnesses = list(executor.map(worker, self.population))
+        if config.parallel:
+            
+            if self.executor is None:
+                max_workers = os.cpu_count() or 1
+                self.executor = ProcessPoolExecutor(max_workers=max_workers)
+                
+            worker = partial(GeneticAlgorithm.play, env_type=self.env, num_trials=config.num_trials)
+            fitnesses = list(self.executor.map(worker, self.population))
                 
             for indiv, fitness in zip(self.population, fitnesses):
                 indiv.fitness = fitness
         else:
-            self.evaluate(num_trials)
+            self.evaluate(config.num_trials)
         
         # Selection
-        parents = self.selection()
+        parents = self.selection(config.elite_ratio, config.tournament_size, config.tournament_ratio)
         new_pop = parents.copy()
         
         # Crossover + Mutation
-        offspring_ratio = 0.85
-        tournament_size = 3
-        while len(new_pop) < int(offspring_ratio * self.population_size):
-            p1 = max(random.sample(parents, k=tournament_size), key=lambda x: x.fitness)
+        # offspring_ratio = 0.85
+        # tournament_size = 3
+        while len(new_pop) < int(config.offspring_ratio * self.population_size):
+            p1 = max(random.sample(parents, k=config.tournament_size), key=lambda x: x.fitness)
             p2 = p1
             while p2 == p1:
-                p2 = max(random.sample(parents, k=tournament_size), key=lambda x: x.fitness)
+                p2 = max(random.sample(parents, k=config.tournament_size), key=lambda x: x.fitness)
             
-            child = self.crossover(p1, p2)
+            child = self.crossover(p1, p2, config.crossover_points)
             self.mutate(child)
             new_pop.append(child)
             

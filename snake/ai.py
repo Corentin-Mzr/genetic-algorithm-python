@@ -1,6 +1,6 @@
 import numpy as np
 
-from constants import Shape
+from snake.types import Shape
 from core.neural_network import NeuralNetwork
 
 def weight_init_he(shape: Shape) -> np.ndarray:

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-Observation = tuple[np.ndarray, float, bool]
+from core.types import Observation
 
 class Environment(ABC):
     

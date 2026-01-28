@@ -4,11 +4,11 @@ from copy import deepcopy
 import pygame as pg
 import numpy as np
 
-from constants import *
-from snake_ai import SnakeAI
-from snake_wrapper import SnakeGameWrapper
-from snake_game import DirectionRelative
-from render import draw_game, draw_state
+from snake.constants import *
+from snake.ai import SnakeAI
+from snake.wrapper import SnakeGameWrapper
+from snake.game import DirectionRelative
+from snake.render import draw_game, draw_state
 
 from dataclasses import dataclass
 

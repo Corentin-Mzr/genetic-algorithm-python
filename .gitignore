@@ -17,6 +17,6 @@ build/
 .pytest_cache/
 
 
-old_models
+old_models_*
 snake/models/*.npy
 snake/models/training.svg

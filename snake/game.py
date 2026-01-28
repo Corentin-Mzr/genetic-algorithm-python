@@ -3,7 +3,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from constants import GRID_WIDTH, GRID_HEIGHT, Position
+from snake.types import PositionInt, PositionFloat, Ray
+from snake.constants import GRID_WIDTH, GRID_HEIGHT
 
 class GameObject(Enum):
     AIR = 0
@@ -12,10 +13,10 @@ class GameObject(Enum):
     APPLE = 3
 
 class Direction(Enum):
-    UP = 1
-    LEFT = 2
-    RIGHT = 3
-    DOWN = 4
+    UP = 0
+    LEFT = 1
+    RIGHT = 2
+    DOWN = 3
     
 class DirectionRelative(Enum):
     STRAIGHT = 0
@@ -45,18 +46,18 @@ RIGHT_DIRECTIONS: dict[Direction, Direction] = {
 
 ABSOLUTE_ACTIONS: list[Direction] = [Direction.UP, Direction.LEFT, Direction.RIGHT, Direction.DOWN]
 RELATIVE_ACTIONS: list[DirectionRelative] = [DirectionRelative.STRAIGHT, DirectionRelative.LEFT, DirectionRelative.RIGHT]
-VISION_DIRS: list[Position] = [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
+VISION_DIRS: list[PositionInt] = [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
 
 # [Front, Front-Right, Right, Back-Right, Back, Back-Left, Left, Front-Left]
 # Relative to the snake direction
-RELATIVE_VISION_DIRS: dict[Direction, list[Position]] = {
+RELATIVE_VISION_DIRS: dict[Direction, list[PositionInt]] = {
     Direction.UP:    [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)],
     Direction.LEFT:  [(0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1)],
     Direction.RIGHT: [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)],
     Direction.DOWN:  [(1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1)],
 }
 
-ABSOLUTE_TO_RELATIVE: dict[Direction, dict[DirectionRelative, Position]] = {
+ABSOLUTE_TO_RELATIVE: dict[Direction, dict[DirectionRelative, PositionInt]] = {
     Direction.UP: {
         DirectionRelative.STRAIGHT: (-1, 0), 
         DirectionRelative.LEFT: (0, -1), 
@@ -82,16 +83,12 @@ ABSOLUTE_TO_RELATIVE: dict[Direction, dict[DirectionRelative, Position]] = {
     },
 }
 
-DIRECTION_TO_POSITION: dict[Direction, Position] = {
+DIRECTION_TO_POSITION: dict[Direction, PositionInt] = {
     Direction.UP: (-1, 0),
     Direction.LEFT: (0, -1),
     Direction.RIGHT: (0, 1),
     Direction.DOWN: (1, 0),
 }
-
-Ray = tuple[float, float, float]
-PositionFloat = tuple[float, float]
-
 
 @dataclass
 class GameState:
@@ -130,15 +127,15 @@ class GameState:
 
 class SnakeGame:
     def __init__(self):
-        self.snake: list[Position] = [self._spawn_snake()]
-        self.snake_set: set[Position] = set(self.snake)
-        self.prev_head: Position | None = None
+        self.snake: list[PositionInt] = [self._spawn_snake()]
+        self.snake_set: set[PositionInt] = set(self.snake)
+        self.prev_head: PositionInt | None = None
         self.just_ate: bool = False
         self.first_apple_spawn: bool = True
         self.first_direction: bool = True
         
         self.direction: Direction = Direction.UP
-        self.apple: Position = self._spawn_apple()
+        self.apple: PositionInt = self._spawn_apple()
         self.score: int = 0
         
         self.steps_without_eating = 0
@@ -160,7 +157,7 @@ class SnakeGame:
             
         return grid 
     
-    def _spawn_snake(self) -> Position:
+    def _spawn_snake(self) -> PositionInt:
         """ Returns a random position for the initial snake head position """
         # Dont spawn close to walls
         s = 0.2
@@ -168,7 +165,7 @@ class SnakeGame:
         y = np.random.randint(int(s * GRID_HEIGHT), int((1.0 - s) * GRID_HEIGHT))
         return (y, x)
     
-    def _spawn_apple(self) -> Position:
+    def _spawn_apple(self) -> PositionInt:
         """ Returns a random position for the apple"""
         if self.first_apple_spawn:
             s = 0.2
@@ -257,7 +254,7 @@ class SnakeGame:
         """ Check if the snake has filled the grid """
         return len(self.snake) == GRID_WIDTH * GRID_HEIGHT
     
-    def _get_ray(self, direction: Position) -> Ray:
+    def _get_ray(self, direction: PositionInt) -> Ray:
         """ Get a ray in the given direction """
         y, x = self.snake[0]
         dy, dx = direction

@@ -1,5 +1,5 @@
-from snake_ai import SnakeAI
-from snake_wrapper import SnakeGameWrapper
+from snake.ai import SnakeAI
+from snake.wrapper import SnakeGameWrapper
 from core.train import train, save_training, save_plot
 
 if __name__ == '__main__':

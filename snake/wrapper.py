@@ -1,11 +1,12 @@
 import numpy as np
 
 from core.environment import Environment, Observation
-from snake_game import SnakeGame, Position, Direction
-from snake_game import GRID_WIDTH, GRID_HEIGHT, RELATIVE_ACTIONS, ABSOLUTE_TO_RELATIVE
+from snake.types import PositionInt
+from snake.constants import GRID_WIDTH, GRID_HEIGHT, GRID_AREA
+from snake.game import SnakeGame, Direction
+from snake.game import RELATIVE_ACTIONS, ABSOLUTE_TO_RELATIVE
 
 from copy import deepcopy
-
 
 class SnakeGameWrapper(Environment):
     def __init__(self):
@@ -20,7 +21,7 @@ class SnakeGameWrapper(Environment):
     def output_size(self) -> int:
         return 3
     
-    def _generate_random_snake(self) -> list[Position]:
+    def _generate_random_snake(self) -> list[PositionInt]:
         """ Generate a snake of random size in a random position """
         length = np.random.randint(1, GRID_WIDTH * GRID_HEIGHT // 2)
         head_x = np.random.randint(0, GRID_WIDTH)
@@ -52,14 +53,14 @@ class SnakeGameWrapper(Environment):
         
         return snake
     
-    def _will_colide(self, pos: Position, snake: list[Position], just_ate: bool) -> bool:
+    def _will_colide(self, pos: PositionInt, snake: list[PositionInt], just_ate: bool) -> bool:
         """ Check if there is a collision at the given position"""
         y, x = pos
         if not (0 <= y < GRID_HEIGHT and 0 <= x < GRID_WIDTH):
             return True
         return pos in snake[:-1] if not just_ate else pos in snake
     
-    def _count_danger_moves(self, direction: Direction, snake: list[Position], just_ate: bool) -> int:
+    def _count_danger_moves(self, direction: Direction, snake: list[PositionInt], just_ate: bool) -> int:
         """ Based on given position and direction, count the number of moves that would result in a collision next turn """
         danger = 0
         head = snake[0]
@@ -70,7 +71,7 @@ class SnakeGameWrapper(Environment):
                 danger += 1
         return danger
     
-    def _simulate_move(self, direction: Direction) -> tuple[list[Position], bool]:
+    def _simulate_move(self, direction: Direction) -> tuple[list[PositionInt], bool]:
         """ Simulate a move in the given direction and return the new snake positions """
         y, x = self.game.snake[0]
         snake = deepcopy(self.game.snake)
@@ -113,6 +114,11 @@ class SnakeGameWrapper(Environment):
         collision_penalty = 0
         winning_reward = 0
         curriculum_reward = 0
+        distance_penalty = 0
+        
+        # hy, hx = self.game.snake[0]
+        # ay, ax = self.game.apple
+        # current_distance = (hy - ay) ** 2 + (hx - ax) ** 2
         
         # Avoidance reward
         # current_danger = self._count_danger_moves(self.game.direction, self.game.snake, self.game.just_ate)
@@ -124,6 +130,15 @@ class SnakeGameWrapper(Environment):
         # Move
         self.game.move_relative(action)
         
+        # hy, hx = self.game.snake[0]
+        # new_ay, new_ax = self.game.apple
+        
+        # if (ay, ax) == (new_ay, new_ax):
+        #     new_distance = (hy - new_ay) ** 2 + (hx - new_ax) ** 2
+            
+        #     if new_distance > current_distance:
+        #         distance_penalty = -50 * (new_distance - current_distance) / GRID_AREA
+                
         # Reward if danger is reduced, reward more if snake is long
         # new_danger = self._count_danger_moves(self.game.direction, self.game.snake, self.game.just_ate)
         # if new_danger < current_danger:
@@ -132,11 +147,11 @@ class SnakeGameWrapper(Environment):
         # avoidance_reward = -20 * new_danger
         
         # Must be efficient
-        # efficiency_penalty = -0.1 * self.game.steps_without_eating # -1.0
+        # efficiency_penalty = -0.05 * self.game.steps_without_eating # -1.0
         
         # Eating is good
         if self.game.just_ate:
-            eating_reward = (50 + 10 * self.game.score ** 2) * (1 / (1 + self.game.steps_without_eating ** 0.5))
+            eating_reward = (50 + 10 * self.game.score ** 2) # * (1 / (1 + self.game.steps_without_eating ** 0.5))
         
         # Starvation is bad
         if self.game.steps_without_eating > 50 + 2 * len(self.game.snake):
@@ -158,7 +173,7 @@ class SnakeGameWrapper(Environment):
             curriculum_reward = self.game.score * 20
             
         # Total reward
-        reward = avoidance_reward + eating_reward + efficiency_penalty + starvation_penalty + collision_penalty + winning_reward + curriculum_reward
+        reward = avoidance_reward + eating_reward + efficiency_penalty + starvation_penalty + collision_penalty + winning_reward + curriculum_reward + distance_penalty
             
         return self.game.get_state().to_array(), reward, done
     

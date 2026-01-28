@@ -1,8 +1,8 @@
 import pygame as pg
 import numpy as np
 
-from snake_game import SnakeGame, GameObject
-from constants import *
+from snake.game import SnakeGame, GameObject
+from snake.constants import *
 
 def clear(screen: pg.Surface) -> None:
     """ Clear the screen """
