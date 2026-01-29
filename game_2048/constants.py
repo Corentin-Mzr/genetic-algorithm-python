@@ -1,4 +1,5 @@
 Color = tuple[int, int, int]
+Shape = tuple[int, int]
 
 # Window
 WINDOW_TITLE: str = "2048"

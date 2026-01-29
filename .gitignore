@@ -18,5 +18,5 @@ build/
 
 
 old_models_*
-snake/models/*.npy
-snake/models/training.svg
+*/models/*.npy
+*/models/training.svg

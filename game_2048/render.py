@@ -1,4 +1,5 @@
 import pygame as pg
+import numpy as np
 
 from game_2048.constants import *
 from game_2048.game import Game2048
@@ -7,25 +8,27 @@ def clear(screen: pg.Surface, color: Color = BLACK) -> None:
     """ Clear the screen """
     screen.fill(color)
     
-def draw_grid(screen: pg.Surface, game: Game2048, color: Color = GREY) -> None:
+def draw_grid(screen: pg.Surface, width: int, height: int, color: Color = GREY) -> None:
     """ Draw the grid """
-    cell_size_x = WINDOW_WIDTH // game.w
-    cell_size_y = WINDOW_HEIGHT // game.h
+    cell_size_x = WINDOW_WIDTH // width
+    cell_size_y = WINDOW_HEIGHT // height
     
     for y in range(0, WINDOW_HEIGHT, cell_size_y):
         for x in range(0, WINDOW_WIDTH, cell_size_x):
             rect = pg.Rect(x, y, cell_size_x, cell_size_y)
             pg.draw.rect(screen, color, rect, 1)
             
-def draw_cells(screen: pg.Surface, game: Game2048, color: Color = BEIGE) -> None:
+def draw_cells(screen: pg.Surface, grid: np.ndarray, color: Color = BEIGE) -> None:
     """ Draw cells, color is given as base color """
-    cell_size_x = WINDOW_WIDTH // game.w
-    cell_size_y = WINDOW_HEIGHT // game.h
+    h, w = grid.shape
+    
+    cell_size_x = WINDOW_WIDTH // w
+    cell_size_y = WINDOW_HEIGHT // h
     font = pg.font.Font(None, FONT_SIZE)
     
-    for y in range(game.h):
-        for x in range(game.w):
-            cell = game.grid[y, x]
+    for y in range(h):
+        for x in range(w):
+            cell = grid[y, x]
             if cell != 0:
                 
                 # Cell
@@ -48,5 +51,5 @@ def draw_cells(screen: pg.Surface, game: Game2048, color: Color = BEIGE) -> None
                 
 def render(screen: pg.Surface, game: Game2048) -> None:
     clear(screen)
-    draw_cells(screen, game)
-    draw_grid(screen, game)
+    draw_cells(screen, game.grid)
+    draw_grid(screen, game.w, game.h)

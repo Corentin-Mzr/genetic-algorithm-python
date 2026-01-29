@@ -15,6 +15,8 @@ DIRECTION_TO_ROTATION: dict[Direction, int] = {
     Direction.DOWN: 3,
 }
 
+MOVES: list[Direction] = [Direction.UP, Direction.LEFT, Direction.RIGHT, Direction.DOWN]
+
 class Game2048:
     def __init__(self):
         self.w: int = 4
