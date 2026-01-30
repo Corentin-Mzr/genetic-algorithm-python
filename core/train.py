@@ -53,18 +53,21 @@ def train(env: Type[Environment],
           pop_size: int, 
           mutation_rate: float, 
           mutation_strength: float,
-          save_rate: float = 0.1
+          save_rate: float = 0.1,
+          config: GATrainConfig | None = None,
     ) -> TrainResult:
     """ Train a neural network using a genetic algorithm """
-    config = GATrainConfig(
-        num_trials=40,
-        parallel=True,
-        elite_ratio=0.06,
-        tournament_size=3,
-        tournament_ratio=0.5,
-        crossover_points=6,
-        offspring_ratio=0.9
-    )
+    
+    if config is None:
+        config = GATrainConfig(
+            num_trials=40,
+            parallel=True,
+            elite_ratio=0.06,
+            tournament_size=3,
+            tournament_ratio=0.5,
+            crossover_points=6,
+            offspring_ratio=0.9
+        )
     
     with GeneticAlgorithm(env, nn_factory, pop_size, mutation_rate, mutation_strength) as ga:
         

@@ -14,3 +14,7 @@ BEIGE: Color = (245, 245, 220)
 
 # Font size for numbers
 FONT_SIZE: int = 48
+
+# Grid
+GRID_WIDTH: int = 4
+GRID_HEIGHT: int = 4

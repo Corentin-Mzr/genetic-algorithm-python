@@ -153,7 +153,7 @@ if __name__ == '__main__':
             continue
         
         best_model = np.load(model)
-        best_ai = Game2048AI(Game2048Wrapper().input_size, 4, Game2048Wrapper().output_size)
+        best_ai = Game2048AI(Game2048Wrapper().input_size, 10, Game2048Wrapper().output_size)
         best_ai.set_weights(best_model)
         
         result = test(best_ai, model.name)
