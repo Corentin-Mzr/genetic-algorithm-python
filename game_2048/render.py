@@ -18,17 +18,15 @@ def draw_grid(screen: pg.Surface, width: int, height: int, color: Color = GREY) 
             rect = pg.Rect(x, y, cell_size_x, cell_size_y)
             pg.draw.rect(screen, color, rect, 1)
             
-def draw_cells(screen: pg.Surface, grid: np.ndarray, color: Color = BEIGE) -> None:
+def draw_cells(screen: pg.Surface, grid: list[int], color: Color = BEIGE) -> None:
     """ Draw cells, color is given as base color """
-    h, w = grid.shape
-    
-    cell_size_x = WINDOW_WIDTH // w
-    cell_size_y = WINDOW_HEIGHT // h
+    cell_size_x = WINDOW_WIDTH // GRID_SIZE
+    cell_size_y = WINDOW_HEIGHT // GRID_SIZE
     font = pg.font.Font(None, FONT_SIZE)
     
-    for y in range(h):
-        for x in range(w):
-            cell = grid[y, x]
+    for y in range(GRID_SIZE):
+        for x in range(GRID_SIZE):
+            cell = grid[y * GRID_SIZE + x]
             if cell != 0:
                 
                 # Cell
@@ -52,4 +50,4 @@ def draw_cells(screen: pg.Surface, grid: np.ndarray, color: Color = BEIGE) -> No
 def render(screen: pg.Surface, game: Game2048) -> None:
     clear(screen)
     draw_cells(screen, game.grid)
-    draw_grid(screen, game.w, game.h)
+    draw_grid(screen, game.size, game.size)

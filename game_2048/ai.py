@@ -2,7 +2,7 @@ from core.neural_network import NeuralNetwork
 
 import numpy as np
 
-from game_2048.constants import Shape, GRID_WIDTH, GRID_HEIGHT
+from game_2048.constants import Shape, GRID_SIZE
 from game_2048.game import get_valid_moves
 
 def weight_init_he(shape: Shape) -> np.ndarray:
@@ -80,8 +80,8 @@ class Game2048AI(NeuralNetwork):
     def get_action(self, state: np.ndarray) -> int:
         output = self.forward(state)
         
-        grid = state[:GRID_WIDTH * GRID_HEIGHT].reshape(GRID_HEIGHT, GRID_WIDTH)
-        valid_moves = get_valid_moves(grid, GRID_WIDTH, GRID_HEIGHT)
+        grid = state[:GRID_SIZE * GRID_SIZE].reshape(GRID_SIZE, GRID_SIZE)
+        valid_moves = get_valid_moves(grid, GRID_SIZE, GRID_SIZE)
         
         if not np.any(valid_moves):
             return np.random.randint(4)

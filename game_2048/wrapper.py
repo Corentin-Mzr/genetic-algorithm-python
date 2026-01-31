@@ -53,23 +53,23 @@ class Game2048Wrapper(Environment):
             survival_reward = 1
         
         # Not update the grid is bad    
-        if not self.game.moved:
-            immobile_penalty = -5
-            self.immobile_count += 1
-        else:
-            self.immobile_count = 0
+        # if not self.game.moved:
+        #     immobile_penalty = -5
+        #     self.immobile_count += 1
+        # else:
+        #     self.immobile_count = 0
             
-        if self.immobile_count > 3:
-            done = True
-            immobile_penalty = -50
+        # if self.immobile_count > 3:
+        #     done = True
+        #     immobile_penalty = -50
             
         # Merging cells is good
         if self.game.score > previous_score:
-            score_reward = 10 + 2.0 * (self.game.score - previous_score)
+            score_reward = 10 # self.game.score - previous_score
         
         # Curriculum learning    
         if done:
-            curriculum_reward = 40.0 * self.game.score
+            curriculum_reward = 50.0 * self.game.score
           
         # Total reward  
         reward = survival_reward + endgame_penalty + score_reward + curriculum_reward + immobile_penalty
