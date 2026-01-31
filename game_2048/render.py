@@ -4,6 +4,8 @@ import numpy as np
 from game_2048.constants import *
 from game_2048.game import Game2048
 
+from math import log2
+
 def clear(screen: pg.Surface, color: Color = BLACK) -> None:
     """ Clear the screen """
     screen.fill(color)
@@ -36,7 +38,7 @@ def draw_cells(screen: pg.Surface, grid: list[int], color: Color = BEIGE) -> Non
                 pg.draw.rect(screen, cell_color, rect)
                 
                 # Text
-                font_size = max(16, FONT_SIZE // int(len(str(cell)) ** 0.5))
+                font_size = max(16, FONT_SIZE - int(log2(cell)))
                 font.set_point_size(font_size)
                 text_surface = font.render(str(cell), True, WHITE)
                 offset_x = 0.5 * text_surface.get_bounding_rect().w
