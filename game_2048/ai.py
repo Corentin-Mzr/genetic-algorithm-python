@@ -1,45 +1,14 @@
-from core.neural_network import NeuralNetwork
-
 import numpy as np
 
-from game_2048.constants import Shape, GRID_SIZE
+from core.neural_network import NeuralNetwork, weight_init_he, relu
+from game_2048.constants import GRID_SIZE
 from game_2048.game import get_valid_moves
-
-def weight_init_he(shape: Shape) -> np.ndarray:
-    """ When using ReLU """
-    fan_in, fan_out = shape
-    std = np.sqrt(2.0 / fan_in)
-    return np.random.normal(0.0, std, size=shape)
-
-def weight_init_xavier(shape: Shape) -> np.ndarray:
-    """ When using sigmoid """
-    fan_in, fan_out = shape
-    limit = np.sqrt(6.0 / (fan_in + fan_out))
-    return np.random.uniform(-limit, limit, size=shape)
-
-def weight_init_orthogonal(shape: Shape, gain: float = 1.0) -> np.ndarray:
-    """ When using tanh """
-    fan_in, fan_out = shape
-    
-    flat_shape = (fan_in, fan_out)
-    a = np.random.normal(0.0, 1.0, flat_shape)
-    
-    # QR decomposition to make an orthogonal matrix
-    u, v = np.linalg.qr(a)
-    
-    # q uniform
-    q = u if u.shape == flat_shape else v
-    
-    # Apply gain, for tanh q = sqrt(2)
-    return q * gain
 
 class Game2048AI(NeuralNetwork):
     def __init__(self, input_size: int, hidden_size: int, output_size: int):
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_size = hidden_size
-        
-        gain_tanh = np.sqrt(2)
         
         self.w1 = weight_init_he((input_size, hidden_size))
         self.b1 = np.zeros((hidden_size))
@@ -49,32 +18,18 @@ class Game2048AI(NeuralNetwork):
         
         self.w3 = weight_init_he((hidden_size, output_size))
         self.b3 = np.zeros((output_size))
-        
-    def sigmoid(self, x: np.ndarray) -> np.ndarray:
-        return 1 / (1 + np.exp(-x))
-        
-    def tanh(self, x: np.ndarray) -> np.ndarray:
-        return np.tanh(x)
-    
-    def relu(self, x: np.ndarray) -> np.ndarray:
-        return np.maximum(0, x)
-    
-    def softmax(self, x: np.ndarray) -> np.ndarray:
-        e_x = np.exp(x - np.max(x))
-        return e_x / e_x.sum(axis=0)
     
     def forward(self, input: np.ndarray) -> np.ndarray:
         # First layer
         x = np.dot(input, self.w1) + self.b1
-        x = self.relu(x)
+        x = relu(x)
         
         # Second layer
         x = np.dot(x, self.w2) + self.b2
-        x = self.relu(x)
+        x = relu(x)
         
         # Output
         x = np.dot(x, self.w3) + self.b3
-        # x = self.softmax(x)
         return x
     
     def get_action(self, state: np.ndarray) -> int:
@@ -137,5 +92,4 @@ if __name__ == '__main__':
     print(r)
     action = ai.get_action(state)
     print(action)
-    # print(np.sum(r))
     

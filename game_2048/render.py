@@ -1,14 +1,16 @@
+from math import log2
+
 import pygame as pg
 
 from game_2048.constants import *
 from game_2048.game import Game2048
 
-from math import log2
-
 def lerp(a: float, b: float, t: float) -> float:
+    """ Linear interpolation """
     return (1 - t) * a + t * b
 
 def lerp_color(a: Color, b: Color, t: float) -> Color:
+    """ Linear interpolation for colors """
     return int(lerp(a[0], b[0], t)), int(lerp(a[1], b[1], t)), int(lerp(a[2], b[2], t))
 
 def get_cell_color(v: int) -> Color:

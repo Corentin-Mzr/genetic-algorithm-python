@@ -1,6 +1,6 @@
 import os
 import random
-from typing import Type
+from typing import Type, Self, Callable
 from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
 from functools import partial
@@ -10,9 +10,8 @@ import numpy as np
 
 from core.environment import Environment
 from core.neural_network import NeuralNetwork
-from core.types import NNFactoryFunc
 
-# np.random.seed(os.getpid())
+NNFactoryFunc = Callable[[], NeuralNetwork]
 
 @dataclass
 class GATrainConfig:
@@ -26,6 +25,11 @@ class GATrainConfig:
     
 
 class GeneticAlgorithm:
+    __slots__ = (
+        "env", "nn_factory", "population_size", "mutation_rate", "mutation_strength", 
+        "generation", "population", "best_fitnesses", "avg_fitnesses", "executor"
+        )
+    
     def __init__(self, 
                  env_type: Type[Environment], 
                  nn_factory: NNFactoryFunc,
@@ -47,10 +51,10 @@ class GeneticAlgorithm:
         
         self.executor: ProcessPoolExecutor | None = None
     
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
     
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         if self.executor is not None:
             self.executor.shutdown(wait=True)
             self.executor = None
@@ -85,15 +89,12 @@ class GeneticAlgorithm:
         parents: list[NeuralNetwork] = []
         
         # Elitism
-        # elite_ratio = 0.02
         self.population.sort(key=lambda x: x.fitness, reverse=True)
         n_elites = max(1, int(self.population_size * elite_ratio))
         elites = self.population[:n_elites]
         parents.extend(elites)
         
         # Tournament selection
-        # tournament_size = 2
-        # tournament_ratio = 0.5
         while len(parents) < int(tournament_ratio * self.population_size):
             candidates = random.sample(self.population, k=tournament_size)
             winner = max(candidates, key=lambda x: x.fitness)
@@ -109,7 +110,6 @@ class GeneticAlgorithm:
         w2 = p2.get_weights()
         
         # Multi-point crossover
-        # n_points = 3
         points = sorted(np.random.choice(len(w1), n_points, replace=False))
         child_weights = w1.copy()
         use_p2 = False
@@ -158,8 +158,6 @@ class GeneticAlgorithm:
         new_pop = parents.copy()
         
         # Crossover + Mutation
-        # offspring_ratio = 0.85
-        # tournament_size = 3
         while len(new_pop) < int(config.offspring_ratio * self.population_size):
             p1 = max(random.sample(parents, k=config.tournament_size), key=lambda x: x.fitness)
             p2 = p1

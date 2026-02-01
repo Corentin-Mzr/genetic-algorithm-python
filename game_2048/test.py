@@ -2,14 +2,16 @@ from pathlib import Path
 from copy import deepcopy
 from dataclasses import dataclass
 
+import numpy as np
+import pygame as pg
+
 from game_2048.game import Direction
 from game_2048.ai import Game2048AI
 from game_2048.wrapper import Game2048Wrapper
 from game_2048.render import clear, draw_grid, draw_cells
 from game_2048.constants import *
 
-import numpy as np
-import pygame as pg
+
 
 def to_enum_str(v: int) -> str:
     if v == Direction.UP.value:

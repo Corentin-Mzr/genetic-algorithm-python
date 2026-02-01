@@ -6,7 +6,6 @@ from game_2048.game import Game2048, MOVES
 class Game2048Wrapper(Environment):
     def __init__(self):
         self.game = Game2048()
-        self.immobile_count = 0
          
     @property
     def input_size(self) -> int:

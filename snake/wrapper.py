@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 
 from core.environment import Environment, Observation
@@ -5,8 +7,6 @@ from snake.types import PositionInt
 from snake.constants import GRID_WIDTH, GRID_HEIGHT, GRID_AREA
 from snake.game import SnakeGame, Direction
 from snake.game import RELATIVE_ACTIONS, ABSOLUTE_TO_RELATIVE
-
-from copy import deepcopy
 
 class SnakeGameWrapper(Environment):
     def __init__(self):

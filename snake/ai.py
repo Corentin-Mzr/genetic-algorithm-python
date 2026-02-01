@@ -1,35 +1,6 @@
 import numpy as np
 
-from snake.types import Shape
-from core.neural_network import NeuralNetwork
-
-def weight_init_he(shape: Shape) -> np.ndarray:
-    """ When using ReLU """
-    fan_in, fan_out = shape
-    std = np.sqrt(2.0 / (fan_in + fan_out))
-    return np.random.normal(0.0, std, size=shape)
-
-def weight_init_xavier(shape: Shape) -> np.ndarray:
-    """ When using sigmoid """
-    fan_in, fan_out = shape
-    limit = np.sqrt(6.0 / (fan_in + fan_out))
-    return np.random.uniform(-limit, limit, size=shape)
-
-def weight_init_orthogonal(shape: Shape, gain: float = 1.0) -> np.ndarray:
-    """ When using tanh """
-    fan_in, fan_out = shape
-    
-    flat_shape = (fan_in, fan_out)
-    a = np.random.normal(0.0, 1.0, flat_shape)
-    
-    # QR decomposition to make an orthogonal matrix
-    u, v = np.linalg.qr(a)
-    
-    # q uniform
-    q = u if u.shape == flat_shape else v
-    
-    # Apply gain, for tanh q = sqrt(2)
-    return q * gain
+from core.neural_network import NeuralNetwork, weight_init_he, relu, softmax
 
 class SnakeAI(NeuralNetwork):
     def __init__(self, input_size: int, hidden_size: int, output_size: int):
@@ -37,15 +8,13 @@ class SnakeAI(NeuralNetwork):
         self.output_size = output_size
         self.hidden_size = hidden_size
         
-        gain_tanh = np.sqrt(2)
-        
-        self.w1 = weight_init_orthogonal((input_size, hidden_size), gain=gain_tanh)
+        self.w1 = weight_init_he((input_size, hidden_size))
         self.b1 = np.zeros((hidden_size))
         
-        self.w2 = weight_init_orthogonal((hidden_size, hidden_size), gain=gain_tanh)
+        self.w2 = weight_init_he((hidden_size, hidden_size))
         self.b2 = np.zeros((hidden_size))
         
-        self.w3 = weight_init_orthogonal((hidden_size, output_size), gain=gain_tanh)
+        self.w3 = weight_init_he((hidden_size, output_size))
         self.b3 = np.zeros((output_size))
         
         self.activations: dict[str, np.ndarray] = {
@@ -54,31 +23,23 @@ class SnakeAI(NeuralNetwork):
             'hidden2': np.zeros((hidden_size,)),
             'output': np.zeros((output_size,)),
         }
-        
-    def sigmoid(self, x: np.ndarray) -> np.ndarray:
-        return 1 / (1 + np.exp(-x))
-        
-    def tanh(self, x: np.ndarray) -> np.ndarray:
-        return np.tanh(x)
-    
-    def relu(self, x: np.ndarray) -> np.ndarray:
-        return np.maximum(0, x)
     
     def forward(self, input: np.ndarray) -> np.ndarray:
         self.activations['input'] = input
         
         # First layer
         x = np.dot(input, self.w1) + self.b1
-        x = self.relu(x)
+        x = relu(x)
         self.activations['hidden1'] = x
         
         # Second layer
         x = np.dot(x, self.w2) + self.b2
-        x = self.tanh(x)
+        x = relu(x)
         self.activations['hidden2'] = x
         
         # Output
         x = np.dot(x, self.w3) + self.b3
+        x = softmax(x)
         self.activations['output'] = x
         return x
     
@@ -122,6 +83,7 @@ class SnakeAI(NeuralNetwork):
         self.b3 = weights[idx:]
 
 if __name__ == '__main__':
-    ai = SnakeAI(26, 7, 3)
+    ai = SnakeAI(4, 7, 3)
     weights = ai.get_weights()
     print(weights)
+    print(ai.forward(np.array([0.1, 0.2, 0.3, 0.5])))

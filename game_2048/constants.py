@@ -1,5 +1,4 @@
-Color = tuple[int, int, int]
-Shape = tuple[int, int]
+from core.types import Color
 
 # Window
 WINDOW_TITLE: str = "2048"

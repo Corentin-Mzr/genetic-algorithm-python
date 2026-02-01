@@ -84,12 +84,15 @@ class Game2048:
         self._reset()
     
     def set_cell_by_index(self, i: int, v: int) -> None:
+        """ Set a cell value by index """
         self.grid[i] = v
         
     def set_cell_by_coord(self, x: int, y: int, v: int) -> None:
+        """ Set a cell value by coords """
         self.grid[y * self.size + x] = v
         
     def get_cell(self, x: int, y: int) -> int:
+        """ Return cell value """
         return self.grid[y * self.size + x]
     
     def _reset(self) -> None:

@@ -1,5 +1,6 @@
 from pathlib import Path
 from copy import deepcopy
+from dataclasses import dataclass
 
 import pygame as pg
 import numpy as np
@@ -9,8 +10,6 @@ from snake.ai import SnakeAI
 from snake.wrapper import SnakeGameWrapper
 from snake.game import DirectionRelative
 from snake.render import draw_game, draw_state
-
-from dataclasses import dataclass
 
 def to_enum_str(v: int) -> str:
     if v == DirectionRelative.LEFT.value:

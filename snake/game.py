@@ -126,6 +126,11 @@ class GameState:
     
 
 class SnakeGame:
+    __slots__ = (
+        "snake", "snake_set", "prev_head", "just_ate", "first_apple_spawn", "first_direction", 
+        "direction", "apple", "score", "steps_without_eating", "steps_total",
+        )
+    
     def __init__(self):
         self.snake: list[PositionInt] = [self._spawn_snake()]
         self.snake_set: set[PositionInt] = set(self.snake)

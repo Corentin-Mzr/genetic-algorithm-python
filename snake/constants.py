@@ -1,4 +1,4 @@
-from snake.types import Color
+from core.types import Color
 
 # Window
 WINDOW_WIDTH: int = 600
