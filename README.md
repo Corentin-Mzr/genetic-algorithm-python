@@ -6,7 +6,11 @@ This project aims to test the genetic algorithm method to play games, such as th
 
 [snake.webm](https://github.com/user-attachments/assets/d870d68b-49d6-4ca8-86ba-721349757b54)
 
-![training example](example/snake_training.svg)
+![Snake training example](example/snake_training.svg)
+
+[game_2048.webm](https://github.com/user-attachments/assets/d00a77d5-37b0-4c44-bbd8-a19435c17a78)
+
+![2048 training example](example/game_2048_training.svg)
 
 ## What is a Genetic Algorithm ?
 
