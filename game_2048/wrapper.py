@@ -21,7 +21,7 @@ class Game2048Wrapper(Environment):
         """ Log2 / 32 """
         valid_moves = arr[16:]
         arr[arr == 0] = 1
-        log = np.log2(arr) / 32
+        log = np.log2(arr) / 32.0
         log[16:] = valid_moves
         return log
     
@@ -30,7 +30,7 @@ class Game2048Wrapper(Environment):
         return self._normalize(self.game.get_state())
     
     def step(self, action_idx: int) -> Observation:
-        reward = 0
+        reward = 0.0
         done = False
         action = MOVES[action_idx]
         
@@ -39,40 +39,28 @@ class Game2048Wrapper(Environment):
         self.game.move(action)
         
         # Rewards and penalties
-        survival_reward = 0
-        endgame_penalty = 0
-        score_reward = 0
-        curriculum_reward = 0
-        immobile_penalty = 0
+        survival_reward = 0.0
+        endgame_penalty = 0.0
+        score_reward = 0.0
+        curriculum_reward = 0.0
         
         # Ending game is not good
         if self.game.is_game_over():
             done = True
-            endgame_penalty = -100
+            endgame_penalty = -100.0
         else:
-            survival_reward = 1
-        
-        # Not update the grid is bad    
-        # if not self.game.moved:
-        #     immobile_penalty = -5
-        #     self.immobile_count += 1
-        # else:
-        #     self.immobile_count = 0
-            
-        # if self.immobile_count > 3:
-        #     done = True
-        #     immobile_penalty = -50
+            survival_reward = 1.0
             
         # Merging cells is good
         if self.game.score > previous_score:
-            score_reward = 10 # self.game.score - previous_score
+            score_reward = 20.0 + 5.0 * np.sqrt(self.game.score - previous_score)
         
         # Curriculum learning    
         if done:
-            curriculum_reward = 50.0 * self.game.score
+            curriculum_reward = 20.0 * self.game.score
           
         # Total reward  
-        reward = survival_reward + endgame_penalty + score_reward + curriculum_reward + immobile_penalty
+        reward = survival_reward + endgame_penalty + score_reward + curriculum_reward
             
         return self._normalize(self.game.get_state()), reward, done
     

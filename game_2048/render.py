@@ -1,10 +1,37 @@
 import pygame as pg
-import numpy as np
 
 from game_2048.constants import *
 from game_2048.game import Game2048
 
 from math import log2
+
+def lerp(a: float, b: float, t: float) -> float:
+    return (1 - t) * a + t * b
+
+def lerp_color(a: Color, b: Color, t: float) -> Color:
+    return int(lerp(a[0], b[0], t)), int(lerp(a[1], b[1], t)), int(lerp(a[2], b[2], t))
+
+def get_cell_color(v: int) -> Color:
+
+    colors_rgb: dict[int, Color] = {
+    0:    (205, 193, 180),
+    2:    (238, 228, 218),
+    4:    (237, 224, 200),
+    8:    (242, 177, 121),
+    16:   (245, 149, 99),
+    32:   (246, 124, 95),
+    64:   (246, 94, 59),
+    128:  (237, 207, 114),
+    256:  (237, 204, 97),
+    512:  (237, 200, 80),
+    1024: (237, 197, 63),
+    2048: (237, 194, 46)
+    }
+    
+    c = colors_rgb.get(v)
+    if c is not None:
+        return c
+    return lerp_color(colors_rgb[2048], BLACK, min(1.0, log2(v) / 16))
 
 def clear(screen: pg.Surface, color: Color = BLACK) -> None:
     """ Clear the screen """
@@ -32,10 +59,8 @@ def draw_cells(screen: pg.Surface, grid: list[int], color: Color = BEIGE) -> Non
             if cell != 0:
                 
                 # Cell
-                f = (0.5 + 1.0 / cell)
-                cell_color = (int(f * color[0]), int(0.5 * f * color[1]), int(0.5 * f * color[2]))
                 rect = pg.Rect(x * cell_size_x, y * cell_size_y, cell_size_x, cell_size_y)
-                pg.draw.rect(screen, cell_color, rect)
+                pg.draw.rect(screen, get_cell_color(cell), rect)
                 
                 # Text
                 font_size = max(16, FONT_SIZE - int(log2(cell)))
