@@ -26,6 +26,20 @@ class NeuralNetwork(ABC):
         """ Set weights from flattened array """
         pass
 
+def weight_init_uniform(shape: Shape, a: float = 0.0, b: float = 1.0) -> np.ndarray:
+    """ Weight initializer with uniform distribution """
+    return np.random.uniform(a, b, size=shape)
+
+def weight_init_normal(shape: Shape, mean: float = 0.0, std: float = 1.0) -> np.ndarray:
+    """ Weight initializer with normal distribution """
+    return np.random.normal(mean, std, size=shape)
+
+def weight_init_lecun(shape: Shape) -> np.ndarray:
+    """ Weight initializer LeCun """
+    fan_in, fan_out = shape
+    limit = np.sqrt(3.0 / fan_in)
+    return np.random.uniform(-limit, limit, size=shape)
+
 def weight_init_he(shape: Shape) -> np.ndarray:
     """ Weight initializer when using ReLU as activation function """
     fan_in, fan_out = shape
@@ -40,14 +54,12 @@ def weight_init_xavier(shape: Shape) -> np.ndarray:
 
 def weight_init_orthogonal(shape: Shape) -> np.ndarray:
     """ Weight initialize when using tanh as activation function """
-    fan_in, fan_out = shape
+    # fan_in, fan_out = shape
+    # flat_shape = (fan_in, fan_out)
     
-    flat_shape = (fan_in, fan_out)
-    a = np.random.normal(0.0, 1.0, flat_shape)
-    
+    a = np.random.normal(0.0, 1.0, shape)
     u, v = np.linalg.qr(a)
-    
-    q = u if u.shape == flat_shape else v
+    q = u if u.shape == shape else v
     
     return q * np.sqrt(2)
 

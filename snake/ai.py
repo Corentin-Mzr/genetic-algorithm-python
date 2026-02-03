@@ -1,6 +1,6 @@
 import numpy as np
 
-from core.neural_network import NeuralNetwork, weight_init_he, relu, softmax
+from core.neural_network import NeuralNetwork, weight_init_he, relu, tanh, weight_init_orthogonal, softmax
 
 class SnakeAI(NeuralNetwork):
     def __init__(self, input_size: int, hidden_size: int, output_size: int):
@@ -8,13 +8,13 @@ class SnakeAI(NeuralNetwork):
         self.output_size = output_size
         self.hidden_size = hidden_size
         
-        self.w1 = weight_init_he((input_size, hidden_size))
+        self.w1 = weight_init_orthogonal((input_size, hidden_size))
         self.b1 = np.zeros((hidden_size))
         
-        self.w2 = weight_init_he((hidden_size, hidden_size))
+        self.w2 = weight_init_orthogonal((hidden_size, hidden_size))
         self.b2 = np.zeros((hidden_size))
         
-        self.w3 = weight_init_he((hidden_size, output_size))
+        self.w3 = weight_init_orthogonal((hidden_size, output_size))
         self.b3 = np.zeros((output_size))
         
         self.activations: dict[str, np.ndarray] = {
@@ -29,17 +29,18 @@ class SnakeAI(NeuralNetwork):
         
         # First layer
         x = np.dot(input, self.w1) + self.b1
-        x = relu(x)
+        x = tanh(x)
         self.activations['hidden1'] = x
         
         # Second layer
         x = np.dot(x, self.w2) + self.b2
-        x = relu(x)
+        x = tanh(x)
         self.activations['hidden2'] = x
         
         # Output
         x = np.dot(x, self.w3) + self.b3
-        x = softmax(x)
+        # x = softmax(x)
+        x = tanh(x)
         self.activations['output'] = x
         return x
     

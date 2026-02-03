@@ -170,7 +170,7 @@ class SnakeGameWrapper(Environment):
          
         # Curriculum learning    
         if done:
-            curriculum_reward = self.game.score * 20
+            curriculum_reward = self.game.score * 50
             
         # Total reward
         reward = avoidance_reward + eating_reward + efficiency_penalty + starvation_penalty + collision_penalty + winning_reward + curriculum_reward + distance_penalty
