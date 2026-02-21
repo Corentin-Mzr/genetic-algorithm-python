@@ -1,4 +1,4 @@
-from math import pi
+from math import pi, cos
 
 from core.environment import Environment, Observation
 from cartpole.env import Cartpole, Action, ACTIONS
@@ -7,9 +7,10 @@ import numpy as np
 
 class CartpoleWrapper(Environment):
     def __init__(self):
-        self.env = Cartpole()
+        self.cartpole = Cartpole()
         self.steps_total = 0
-        self.steps_below_vertical = 0
+        self.steps_below_horizontal = 0
+        self.steps_straight = 0
         
     @property
     def input_size(self) -> int:
@@ -20,45 +21,66 @@ class CartpoleWrapper(Environment):
         return 3
     
     def reset(self) -> np.ndarray:
-        self.env = Cartpole()
-        return self.env.get_state()
+        self.cartpole = Cartpole()
+        self.steps_total = 0
+        self.steps_below_horizontal = 0
+        return self.cartpole.get_state()
     
     def step(self, action_idx: int) -> Observation:
+        MAX_STEPS = 1000
+        EARLY_EXIT_STEPS = 50
+        WIN_STEPS = 250
         reward = 0.0
         done = False
         action = ACTIONS[action_idx]
+        self.steps_total += 1
         
-        self.env.move(action)
+        self.cartpole.move(action)
         
         # Rewards and penalties
         survival_reward = 0.0
         stability_score = 0.0
         end_reach_reward = 0.0
         bad_perf_penalty = 0.0
-        
-        # Surviving is good
-        survival_reward = 1.0
+        center_reward = 0.0
         
         # Give a score based on how close the pole is to the vertical
-        if self.env.theta < 0.5 * pi or self.env.theta > 1.5 * pi:
-            stability_score = 2.0 * (1.0 - abs(self.env.theta - pi) / (0.5 * pi))
-            self.steps_below_vertical = 0
+        if self.cartpole.theta < 0.5 * pi or self.cartpole.theta > 1.5 * pi:
+            stability_score = 1.0 * cos(self.cartpole.theta) ** 2
+            self.steps_below_horizontal = 0 
         else:
-            stability_score = -2.0
-            self.steps_below_vertical += 1
+        #     stability_score = -2.0
+            self.steps_below_horizontal += 1
             
-        if self.steps_below_vertical > 50:
-            done = True
-            bad_perf_penalty = -50.0
-            
-        if self.steps_total > 500:
-            done = True
-            end_reach_reward = 100.0
-            
-        reward = survival_reward + stability_score + end_reach_reward + bad_perf_penalty
-        self.steps_total += 1
+        # Give a reward for keeping the cart near the center
+        if abs(self.cartpole.x) < 0.25 * self.cartpole.x_lim:
+            center_reward = 1.0 - abs(self.cartpole.x) / self.cartpole.x_lim
         
-        return self.env.get_state(), reward, done
+        # Very close to vertical
+        # if self.cartpole.theta < 0.05 * pi or self.cartpole.theta > 1.95 * pi:
+        #     stability_score *= 10.0
+        #     self.steps_straight += 1
+        # else:
+        #     self.steps_straight = 0
+            
+        # Failed to stabilize
+        if self.steps_below_horizontal >= EARLY_EXIT_STEPS:
+            done = True
+            # bad_perf_penalty = -10.0
+            
+        # Survived long enough but not stabilized
+        if self.steps_total >= MAX_STEPS:
+            done = True
+        #     end_reach_reward = 20.0
+            
+        # # Survived long enough and stabilized
+        # if self.steps_straight >= WIN_STEPS:
+        #     done = True
+        #     end_reach_reward = 20.0 + 100.0 * (self.steps_straight / self.steps_total)
+            
+        reward = stability_score + center_reward + end_reach_reward + bad_perf_penalty + survival_reward
+        
+        return self.cartpole.get_state(), reward, done
     
     
 if __name__ == '__main__':

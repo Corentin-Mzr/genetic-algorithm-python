@@ -1,8 +1,12 @@
 import pygame as pg
 
-from cartpole.env import Cartpole, Action
+from cartpole.env import Cartpole, Action, ACTIONS
 from cartpole.constants import *
 from cartpole.render import clear, draw
+from cartpole.wrapper import CartpoleWrapper
+from cartpole.ai import CartpoleAI
+
+import numpy as np
 
 def main() -> None:
     # Pygame setup
@@ -13,9 +17,14 @@ def main() -> None:
     dt = 0
     
     # Game setup
-    game = Cartpole()
+    env = Cartpole()
     action: Action | None = None
     accumulator: float = 0.0
+    
+    # AI
+    best_model = np.load("cartpole/models/best_ai.npy")
+    best_ai = CartpoleAI(CartpoleWrapper().input_size, 2, CartpoleWrapper().output_size)
+    best_ai.set_weights(best_model)
     
     # Main loop
     while running:
@@ -39,19 +48,25 @@ def main() -> None:
         while accumulator >= DELTA_TIME:
             accumulator -= DELTA_TIME
             
-            if action is not None:
-                game.move(action)
+            # if action is not None:
+            #     env.move(action)
+                
+            state = env.get_state()
+            ai_action_idx = best_ai.get_action(state)
+            ai_action = ACTIONS[ai_action_idx]
+            env.move(ai_action)
+            
+            if ai_action == Action.IDLE:
+                print("idle")
                     
             if not running:
                 break
-            
-        print(game.get_state())
         
         # Rendering
         pg.display.set_caption(f"{WINDOW_TITLE}")
         
         clear(screen)
-        draw(screen, game.x, game.theta)
+        draw(screen, env.x, env.theta)
         
         
         pg.display.flip()

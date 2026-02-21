@@ -18,14 +18,11 @@ def draw(screen: pg.Surface, x: float, theta: float) -> None:
     norm_x = (x / 10.0 + 0.5)
     remap_x = 0.25 + norm_x * 0.5
     
-    cx = width * remap_x
-    cy = 0.5 * height - 0.5 * CART_HEIGHT
+    cx: float = width * remap_x
+    cy: float = 0.5 * height - 0.5 * CART_HEIGHT
     
     rect = pg.Rect(cx - 0.5 * CART_WIDTH, cy, CART_WIDTH, CART_HEIGHT)
     pg.draw.rect(screen, GREY, rect, 1)
-    
-    # pole = pg.Rect(0.5 * width + x, 0.5 * height - 50, 10, 50)
-    # pg.draw.rect(screen, GREY, pole, 1)
     
     pivot = (cx, cy)
     tip = (
