@@ -6,6 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "numpy",
-        "pygame-ce"
+        "pygame-ce",
+        "matplotlib",
     ],
 )

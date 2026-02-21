@@ -50,25 +50,19 @@ This project architecture is inspired by the [**Gymnasium**](https://github.com/
 ### Create a virtual environment and activate it
 
 ```bash
-python -m venv venv
+python -m venv .venv
 ```
 
 On Linux:
 
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 On Windows:
 
 ```bash
-venv\Scripts\activate.bat
-```
-
-### Install libraries
-
-```bash
-pip install pygame-ce numpy matplotlib
+.venv\Scripts\activate.bat
 ```
 
 ### Install the project in editable mode
