@@ -4,22 +4,38 @@ from dataclasses import dataclass
 import numpy as np
 import matplotlib.pyplot as plt
 
-from core.genetic_algorithm import GeneticAlgorithm, NNFactoryFunc, NeuralNetwork, GATrainConfig
+from core.genetic_algorithm import GeneticAlgorithm, NNFactoryFunc, NeuralNetwork
 from core.environment import Environment
 
-@dataclass
-class TrainResult:
+@dataclass(init=True, frozen=True, slots=True)
+class GATrainConfig:
+    generations: int = 100
+    pop_size: int = 128
+    mutation_rate: float = 0.2
+    mutation_strength: float = 0.1
+    num_trials: int = 40
+    parallel: bool = True
+    elite_ratio: float = 0.1
+    tournament_size: int = 3
+    tournament_ratio: float = 0.5
+    crossover_points: int = 4
+    offspring_ratio: float = 0.9
+    early_exit_enable: bool = True
+    early_exit_avg_over_n: int = 10     # Do the avg with the last N gens
+    early_exit_stop_after_n: int = 20   # Stop early if for N gens the avg best fitness has not improved
+    early_exit_threshold: float = 0.05   # Diff between avg current and avg previous fitness must be > 10%
+
+@dataclass(frozen=True, slots=True)
+class GATrainResult:
     best_ai: NeuralNetwork
     best_fitness: float
-    
     best_ai_per_gen: list[NeuralNetwork]
     saved_gen: list[int]
     generations: int
-    
     best_fitness_per_gen: list[float]
     average_fitness_per_gen: list[float]
     
-def save_plot(result: TrainResult, filepath: str = "training.svg") -> None:
+def save_plot(result: GATrainResult, filepath: str = "training.svg") -> None:
     """ Save the plot that shows fitness evolution during training """
     _, axs = plt.subplots(nrows=1, ncols=1, figsize=(16, 9), sharex=True, linewidth=3)
     axs.semilogy(result.best_fitness_per_gen, label="Best fitness")
@@ -35,7 +51,7 @@ def save_plot(result: TrainResult, filepath: str = "training.svg") -> None:
     
     print("Fitness plot saved")
     
-def save_training(result: TrainResult, save_folder: str = ".") -> None:
+def save_training(result: GATrainResult, save_folder: str = ".") -> None:
     """ Save trained neural networks """
     for i in range(len(result.best_ai_per_gen)):
         filepath = f"{save_folder}/best_ai_gen_{result.saved_gen[i]:03d}.npy"
@@ -49,31 +65,15 @@ def save_training(result: TrainResult, save_folder: str = ".") -> None:
 
 def train(env: Type[Environment], 
           nn_factory: NNFactoryFunc, 
-          generations: int,
-          pop_size: int, 
-          mutation_rate: float, 
-          mutation_strength: float,
           save_rate: float = 0.1,
           config: GATrainConfig | None = None,
-    ) -> TrainResult:
+    ) -> GATrainResult:
     """ Train a neural network using a genetic algorithm """
     
     if config is None:
-        config = GATrainConfig(
-            num_trials=40,
-            parallel=True,
-            elite_ratio=0.06,
-            tournament_size=3,
-            tournament_ratio=0.5,
-            crossover_points=4,
-            offspring_ratio=0.9,
-            early_exit_enable=True,
-            early_exit_avg_over_n=10,
-            early_exit_stop_after_n=20,
-            early_exit_threshold=0.05
-        )
+        config = GATrainConfig()
     
-    with GeneticAlgorithm(env, nn_factory, pop_size, mutation_rate, mutation_strength) as ga:
+    with GeneticAlgorithm(env, nn_factory, config.pop_size, config.mutation_rate, config.mutation_strength) as ga:
         
         save = max(1, int(1 / save_rate))
         
@@ -89,9 +89,9 @@ def train(env: Type[Environment],
         early_count = 0
         exited_early = False
         
-        for gen in range(generations):
-            best_ai = ga.evolve(config)
-            best_ai.fitness = ga.best_fitnesses[-1] # ga.play(best_ai, env, config.num_trials)
+        for gen in range(config.generations):
+            best_ai = ga.evolve(config.num_trials, config.parallel, config.elite_ratio, config.tournament_size, config.offspring_ratio, config.crossover_points)
+            best_ai.fitness = ga.best_fitnesses[-1]
             
             if best_ai.fitness > best_fitness:
                 best_ai_global = best_ai
@@ -127,12 +127,12 @@ def train(env: Type[Environment],
         if exited_early:
             print("Early exit")    
                 
-        result = TrainResult(
+        result = GATrainResult(
             best_ai=best_ai_global,
             best_fitness=best_fitness,
             best_ai_per_gen=best_ai_per_gen,
             saved_gen=saved_gen,
-            generations=gen if exited_early else generations,
+            generations=gen if exited_early else config.generations,
             best_fitness_per_gen=ga.best_fitnesses,
             average_fitness_per_gen=ga.avg_fitnesses,
         )

@@ -13,21 +13,6 @@ from core.neural_network import NeuralNetwork
 
 NNFactoryFunc = Callable[[], NeuralNetwork]
 
-@dataclass(init=True, frozen=True, slots=True)
-class GATrainConfig:
-    num_trials: int
-    parallel: bool
-    elite_ratio: float
-    tournament_size: int
-    tournament_ratio: float
-    crossover_points: int
-    offspring_ratio: float
-    early_exit_enable: bool = True
-    early_exit_avg_over_n: int = 20     # Do the avg with the last N gens
-    early_exit_stop_after_n: int = 20   # Stop early if for N gens the avg best fitness has not improved
-    early_exit_threshold: float = 0.1   # Diff between avg current and avg previous fitness must be > 10%
-    
-
 class GeneticAlgorithm:
     __slots__ = (
         "env", "nn_factory", "population_size", "mutation_rate", "mutation_strength", 
@@ -144,38 +129,38 @@ class GeneticAlgorithm:
         
         ai.set_weights(weights)
         
-    def evolve(self, config: GATrainConfig) -> NeuralNetwork:
+    def evolve(self, num_trials: int, parallel: bool, elite_ratio: float, tournament_size: int, offspring_ratio: float, crossover_points: int) -> NeuralNetwork:
         """ Create the new generation """
         # Seed
         gen_seed = self.generation
         
         # Evaluate
-        if config.parallel:
+        if parallel:
             
             if self.executor is None:
                 max_workers = os.cpu_count() or 1
                 self.executor = ProcessPoolExecutor(max_workers=max_workers)
                 
-            worker = partial(GeneticAlgorithm.play, env_type=self.env, num_trials=config.num_trials, seed=gen_seed)
+            worker = partial(GeneticAlgorithm.play, env_type=self.env, num_trials=num_trials, seed=gen_seed)
             fitnesses = list(self.executor.map(worker, self.population))
                 
             for indiv, fitness in zip(self.population, fitnesses):
                 indiv.fitness = fitness
         else:
-            self.evaluate(config.num_trials, seed=gen_seed)
+            self.evaluate(num_trials, seed=gen_seed)
         
         # Selection
-        parents = self.selection(config.elite_ratio, config.tournament_size, config.tournament_ratio)
+        parents = self.selection(elite_ratio, tournament_size, offspring_ratio)
         new_pop = parents.copy()
         
         # Crossover + Mutation
-        while len(new_pop) < int(config.offspring_ratio * self.population_size):
-            p1 = max(random.sample(parents, k=config.tournament_size), key=lambda x: x.fitness)
+        while len(new_pop) < int(offspring_ratio * self.population_size):
+            p1 = max(random.sample(parents, k=tournament_size), key=lambda x: x.fitness)
             p2 = p1
             while p2 == p1:
-                p2 = max(random.sample(parents, k=config.tournament_size), key=lambda x: x.fitness)
+                p2 = max(random.sample(parents, k=tournament_size), key=lambda x: x.fitness)
             
-            child = self.crossover(p1, p2, config.crossover_points)
+            child = self.crossover(p1, p2, crossover_points)
             self.mutate(child)
             new_pop.append(child)
             

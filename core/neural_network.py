@@ -54,13 +54,9 @@ def weight_init_xavier(shape: Shape) -> np.ndarray:
 
 def weight_init_orthogonal(shape: Shape) -> np.ndarray:
     """ Weight initialize when using tanh as activation function """
-    # fan_in, fan_out = shape
-    # flat_shape = (fan_in, fan_out)
-    
     a = np.random.normal(0.0, 1.0, shape)
     u, v = np.linalg.qr(a)
     q = u if u.shape == shape else v
-    
     return q * np.sqrt(2)
 
 
