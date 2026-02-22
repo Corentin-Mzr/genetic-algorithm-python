@@ -102,19 +102,19 @@ class SnakeGameWrapper(Environment):
         return self.game.get_state().to_array()
     
     def step(self, action_idx: int) -> Observation:
-        reward = 0
+        reward = 0.0
         done = False
         action = RELATIVE_ACTIONS[action_idx]
         
         # Reward and penalty types
-        avoidance_reward = 0
-        eating_reward = 0
-        efficiency_penalty = 0
-        starvation_penalty = 0
-        collision_penalty = 0
-        winning_reward = 0
-        curriculum_reward = 0
-        distance_penalty = 0
+        avoidance_reward = 0.0
+        eating_reward = 0.0
+        efficiency_penalty = 0.0
+        starvation_penalty = 0.0
+        collision_penalty = 0.0
+        winning_reward = 0.0
+        curriculum_reward = 0.0
+        distance_penalty = 0.0
         
         # hy, hx = self.game.snake[0]
         # ay, ax = self.game.apple
@@ -147,7 +147,7 @@ class SnakeGameWrapper(Environment):
         # avoidance_reward = -20 * new_danger
         
         # Must be efficient
-        # efficiency_penalty = -0.05 * self.game.steps_without_eating # -1.0
+        # efficiency_penalty = -1 #-0.05 * self.game.steps_without_eating # -1.0
         
         # Eating is good
         if self.game.just_ate:
