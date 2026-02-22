@@ -13,7 +13,7 @@ from core.neural_network import NeuralNetwork
 
 NNFactoryFunc = Callable[[], NeuralNetwork]
 
-@dataclass
+@dataclass(init=True, frozen=True, slots=True)
 class GATrainConfig:
     num_trials: int
     parallel: bool
@@ -22,6 +22,10 @@ class GATrainConfig:
     tournament_ratio: float
     crossover_points: int
     offspring_ratio: float
+    early_exit_enable: bool = True
+    early_exit_avg_over_n: int = 20     # Do the avg with the last N gens
+    early_exit_stop_after_n: int = 20   # Stop early if for N gens the avg best fitness has not improved
+    early_exit_threshold: float = 0.1   # Diff between avg current and avg previous fitness must be > 10%
     
 
 class GeneticAlgorithm:
@@ -60,8 +64,12 @@ class GeneticAlgorithm:
             self.executor = None
         
     @staticmethod
-    def play(ai: NeuralNetwork, env_type: Type[Environment], num_trials: int) -> float:
+    def play(ai: NeuralNetwork, env_type: Type[Environment], num_trials: int, seed: int | None = None) -> float:
         """ Make the AI do actions in the environment until termination """
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+            
         rewards: list[float] = []
         
         for _ in range(num_trials):
@@ -79,10 +87,10 @@ class GeneticAlgorithm:
             
         return float(0.7 * np.median(rewards) + 0.3 * np.max(rewards))
         
-    def evaluate(self, num_trials: int) -> None:
+    def evaluate(self, num_trials: int, seed: int | None = None) -> None:
         """ Evaluate an AI on multiple samples """
         for ai in self.population:
-            ai.fitness = self.play(ai, self.env, num_trials)
+            ai.fitness = self.play(ai, self.env, num_trials, seed)
     
     def selection(self, elite_ratio: float, tournament_size: int, tournament_ratio: float) -> list[NeuralNetwork]:
         """ Select best AIs during this generation """
@@ -138,6 +146,9 @@ class GeneticAlgorithm:
         
     def evolve(self, config: GATrainConfig) -> NeuralNetwork:
         """ Create the new generation """
+        # Seed
+        gen_seed = self.generation
+        
         # Evaluate
         if config.parallel:
             
@@ -145,13 +156,13 @@ class GeneticAlgorithm:
                 max_workers = os.cpu_count() or 1
                 self.executor = ProcessPoolExecutor(max_workers=max_workers)
                 
-            worker = partial(GeneticAlgorithm.play, env_type=self.env, num_trials=config.num_trials)
+            worker = partial(GeneticAlgorithm.play, env_type=self.env, num_trials=config.num_trials, seed=gen_seed)
             fitnesses = list(self.executor.map(worker, self.population))
                 
             for indiv, fitness in zip(self.population, fitnesses):
                 indiv.fitness = fitness
         else:
-            self.evaluate(config.num_trials)
+            self.evaluate(config.num_trials, seed=gen_seed)
         
         # Selection
         parents = self.selection(config.elite_ratio, config.tournament_size, config.tournament_ratio)
