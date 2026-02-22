@@ -1,0 +1,10 @@
+WINDOW_WIDTH: int = 800
+WINDOW_HEIGHT: int = 600
+WINDOW_TITLE: str = "Cartpole"
+
+DELTA_TIME: float = 1.0 / 60.0
+
+BLACK = (0, 0, 0)
+GREY = (128, 128, 128)
+WHITE = (255, 255, 255)
+DARK_BLUE = (0, 0, 128)

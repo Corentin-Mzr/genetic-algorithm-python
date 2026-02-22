@@ -65,8 +65,12 @@ def train(env: Type[Environment],
             elite_ratio=0.06,
             tournament_size=3,
             tournament_ratio=0.5,
-            crossover_points=6,
-            offspring_ratio=0.9
+            crossover_points=4,
+            offspring_ratio=0.9,
+            early_exit_enable=True,
+            early_exit_avg_over_n=10,
+            early_exit_stop_after_n=20,
+            early_exit_threshold=0.05
         )
     
     with GeneticAlgorithm(env, nn_factory, pop_size, mutation_rate, mutation_strength) as ga:
@@ -81,11 +85,8 @@ def train(env: Type[Environment],
         
         last_best_fitness = -np.inf
         avg_best_fitness = -np.inf
-        avg_over_n = 20 # Do the avg with the last N gens
         idx = 0
-        stop_after_n = 20 # Stop early if for N gens the avg best fitness has not improved
         early_count = 0
-        threshold = 0.1
         exited_early = False
         
         for gen in range(generations):
@@ -102,10 +103,15 @@ def train(env: Type[Environment],
                 best_ai_per_gen.append(best_ai)
             
             last_best_fitness = ga.best_fitnesses[-1]  
-            if gen >= avg_over_n:
-                avg_best_fitness = np.mean(ga.best_fitnesses[idx:idx+avg_over_n])
+            
+            if not config.early_exit_enable:
+                continue
+            
+            if gen >= config.early_exit_avg_over_n:
+                avg_best_fitness = np.mean(ga.best_fitnesses[idx:idx+config.early_exit_avg_over_n])
                 idx += 1
-                if np.abs(avg_best_fitness - last_best_fitness) < threshold * avg_best_fitness:
+                
+                if np.abs(avg_best_fitness - last_best_fitness) < config.early_exit_threshold * avg_best_fitness:
                     early_count += 1
                     print(f"Improvement not significant {early_count} | last {last_best_fitness:.0f} | avg {avg_best_fitness:.0f}")
                 elif last_best_fitness < ga.best_fitnesses[-2]:
@@ -114,7 +120,7 @@ def train(env: Type[Environment],
                 else:
                     early_count = 0
                     
-            if early_count >= stop_after_n:
+            if early_count >= config.early_exit_stop_after_n:
                 exited_early = True
                 break
         

@@ -1,47 +1,34 @@
 import numpy as np
 
-from core.neural_network import NeuralNetwork, weight_init_he, relu, tanh, weight_init_orthogonal, softmax
+from core.neural_network import NeuralNetwork, weight_init_he, relu, softmax
 
-class SnakeAI(NeuralNetwork):
+class CartpoleAI(NeuralNetwork):
     def __init__(self, input_size: int, hidden_size: int, output_size: int):
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_size = hidden_size
         
-        self.w1 = weight_init_orthogonal((input_size, hidden_size))
+        self.w1 = weight_init_he((input_size, hidden_size))
         self.b1 = np.zeros((hidden_size))
         
-        self.w2 = weight_init_orthogonal((hidden_size, hidden_size))
+        self.w2 = weight_init_he((hidden_size, hidden_size))
         self.b2 = np.zeros((hidden_size))
         
-        self.w3 = weight_init_orthogonal((hidden_size, output_size))
+        self.w3 = weight_init_he((hidden_size, output_size))
         self.b3 = np.zeros((output_size))
-        
-        self.activations: dict[str, np.ndarray] = {
-            'input': np.zeros((input_size,)),
-            'hidden1': np.zeros((hidden_size,)),
-            'hidden2': np.zeros((hidden_size,)),
-            'output': np.zeros((output_size,)),
-        }
     
     def forward(self, input: np.ndarray) -> np.ndarray:
-        self.activations['input'] = input
-        
         # First layer
         x = np.dot(input, self.w1) + self.b1
-        x = tanh(x)
-        self.activations['hidden1'] = x
+        x = relu(x)
         
         # Second layer
         x = np.dot(x, self.w2) + self.b2
-        x = tanh(x)
-        self.activations['hidden2'] = x
+        x = relu(x)
         
         # Output
         x = np.dot(x, self.w3) + self.b3
-        # x = softmax(x)
-        x = tanh(x)
-        self.activations['output'] = x
+        x = softmax(x)
         return x
     
     def get_action(self, state: np.ndarray) -> int:
@@ -82,9 +69,12 @@ class SnakeAI(NeuralNetwork):
         idx += w3_size
         
         self.b3 = weights[idx:]
-
+        
+        
 if __name__ == '__main__':
-    ai = SnakeAI(4, 7, 3)
+    ai = CartpoleAI(4, 2, 3)
     weights = ai.get_weights()
     print(weights)
-    print(ai.forward(np.array([0.1, 0.2, 0.3, 0.5])))
+    state = np.array([2.0, 0.0, 0.0, 0.0])
+    action = ai.get_action(state)
+    print(action)
