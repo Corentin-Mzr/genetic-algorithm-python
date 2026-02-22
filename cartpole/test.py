@@ -125,9 +125,9 @@ def visualize_test_result(result: CartpoleTestResult) -> None:
         
         model = f"Model: {result.model_name}"
         curr_step = f"Step: {step + 1}/{result.steps}"
-        curr_reward = f"Reward: {(result.rewards[step - 1]) if step > 0 else 0 :.0f}"
+        curr_reward = f"Reward: {(result.rewards[step - 1]) if step > 0 else 0 :.1f}"
         next_action = f"Next Action: {to_enum_str(result.actions[step]) if step < result.steps - 1 else "None"}"
-        final_score = f"Final score: {result.score}"
+        final_score = f"Final score: {result.score:.1f}"
             
         rendered_text = f"{model} | {curr_step} | {curr_reward} | {next_action} | {final_score}"
         text_surface = font.render(rendered_text, True, (255, 255, 255))

@@ -4,6 +4,9 @@ from enum import Enum
 
 import numpy as np
 
+def sign(x: float) -> float:
+    return 1.0 if x > 0.0 else -1.0 if x < 0.0 else 0.0
+
 class Action(Enum):
     IDLE = 0
     LEFT = 1
@@ -13,10 +16,11 @@ ACTIONS = [Action.IDLE, Action.LEFT, Action.RIGHT]
 
 class Cartpole:
     __slots__ = (
-        'x', 'vx', 'theta', 'vtheta', 
-        'mass_cart', 'mass_pole', 'mass_total', 'length', 'polemass_length', 
+        'x', 'x_dot', 'theta', 'theta_dot', 
+        'mass_cart', 'mass_pole', 'mass_total', 'half_length', 'polemass_length', 'force_mag',
         'f', 
-        'g', 'dt', 'x_lim', 'vx_lim', 'theta_spawn_lim', 'vtheta_lim')
+        'g', 'dt', 'x_lim', 'x_dot_lim', 'theta_dot_lim',
+        'nc', 'friction_cart_ground', 'friction_pole_cart')
     
     def __init__(self):
         # Constants
@@ -25,21 +29,26 @@ class Cartpole:
         self.mass_cart = 1.0
         self.mass_pole = 0.1
         self.mass_total =  self.mass_cart + self.mass_pole
-        self.length = 1.0
-        self.polemass_length = self.mass_pole * self.length
+        self.half_length = 0.5
+        self.polemass_length = self.mass_pole * self.half_length
+        self.force_mag = 10.0
         
         # Dynamics - State
         self.x = 0.0
-        self.vx = 0.0
+        self.x_dot = 0.0
         self.theta = 0.0
-        self.vtheta = 0.0
+        self.theta_dot = 0.0
         self.f = 0.0
         
         # Env limits - Spawn limits
         self.x_lim = 5.0
-        self.vx_lim = 100.0
-        self.theta_spawn_lim = 0.25 * pi
-        self.vtheta_lim = 10.0
+        self.x_dot_lim = 100.0
+        self.theta_dot_lim = 100.0
+        
+        # For accurate dynamics with friction
+        self.nc = 1.0
+        self.friction_cart_ground = 0.005
+        self.friction_pole_cart = 0.0024
         
         self._reset()
         
@@ -48,82 +57,104 @@ class Cartpole:
         self.x = random.uniform(-self.x_lim, self.x_lim)
         self.theta = random.uniform(0.0, 2.0 * pi)
         
-    def _compute_dynamics(self) -> tuple[float, float]:
-        """ Compute cart and pole accelerations """
+    def _compute_dynamics_accurate(self) -> tuple[float, float]:
+        """ Compute accurate cart and pole accelerations, with friction """
         cth = cos(self.theta)
         sth = sin(self.theta)
+        theta_dot_sq = self.theta_dot ** 2
+        ml = self.polemass_length
+        itermax = 10
+        i = 0
         
-        temp = (self.f + self.polemass_length * self.vtheta ** 2 * sth) / self.mass_total
+        while True and i < itermax:
+            i += 1
+            uc_sign = self.friction_cart_ground * sign(self.nc * self.x_dot)
         
-        theta_acc = (self.g * sth - cth * temp) / (self.length * (4.0/3.0 - self.mass_pole * cth ** 2 / self.mass_total))
-        x_acc = temp - self.polemass_length * theta_acc * cth / self.mass_total
+            theta_acc = (
+                self.g * sth + cth * (
+                    (-self.f - ml * theta_dot_sq * (sth + uc_sign * cth)) / self.mass_total 
+                    + uc_sign * self.g
+                ) 
+                - (self.friction_pole_cart * self.theta_dot) / ml
+            ) / self.half_length * (4.0 / 3.0 - self.mass_pole * cth * (cth - uc_sign) / self.mass_total)
+            
+            new_nc = self.mass_total * self.g - ml * (theta_acc * sth + theta_dot_sq * cth)
+        
+            if sign(new_nc) == sign(self.nc):
+                break
+            
+            self.nc = new_nc
+            
+        self.nc = new_nc
+            
+        x_acc = (
+            self.f + ml * (sth * theta_dot_sq - theta_acc * cth) - uc_sign * self.nc
+        ) / self.mass_total
         
         return x_acc, theta_acc
         
-    def _compute_cart_acc(self) -> float:
-        """ Compute cart acceleration """
-        acc_num = self.f + self.mass_pole * self.length * self.vtheta ** 2 * sin(self.theta) - self.mass_pole * self.g * sin(self.theta) * cos(self.theta)
-        acc_denom = self.mass_cart + self.mass_pole - self.mass_pole * cos(self.theta) ** 2
+    def _compute_dynamics(self) -> tuple[float, float]:
+        """ Compute cart and pole accelerations, friction neglected """
+        cth = cos(self.theta)
+        sth = sin(self.theta)
         
-        if acc_denom == 0.0:
-            return 0.0
+        temp = (
+            self.f + self.polemass_length * sth * self.theta_dot ** 2
+            ) / self.mass_total
         
-        return acc_num / acc_denom
-    
-    def _compute_pole_acc(self) -> float:
-        """ Compute pole acceleration """
-        acc_num = (self.mass_cart + self.mass_pole) * self.g * sin(self.theta) - (self.f + self.mass_pole * self.length * self.vtheta ** 2 * sin(self.theta)) * cos(self.theta)
-        acc_denom = self.length * (self.mass_cart + self.mass_pole - self.mass_pole * cos(self.theta) ** 2)
+        theta_acc = (self.g * sth - cth * temp) / (
+            self.half_length 
+            * (4.0 / 3.0 - self.mass_pole * cth ** 2 / self.mass_total)
+            )
+        x_acc = temp - self.polemass_length * theta_acc * cth / self.mass_total
         
-        if acc_denom == 0.0:
-            return 0.0
-        
-        return acc_num / acc_denom
-        
+        return x_acc, theta_acc 
         
     def _update(self) -> None:
         """ Update the cart and pole, reset applied force """
-        x_acc, theta_acc = self._compute_dynamics()
-            
-        self.vx += self.dt * x_acc
-        self.vtheta += self.dt * theta_acc
-        
-        self.x += self.dt * self.vx
-        self.theta += self.dt * self.vtheta
-        
-        # Clamp
-        self.vx = min(max(-self.vx_lim, self.vx), self.vx_lim)
-        self.vtheta = min(max(-self.vtheta_lim, self.vtheta), self.vtheta_lim)
-        self.theta %= 2.0 * pi
-        
         # Wall
         if self.x <= -self.x_lim:
             self.x = -self.x_lim
-            self.vx = 0.0   
+            self.x_dot = 0.0
+            self.f = 0.0   
         elif self.x >= self.x_lim:
             self.x = self.x_lim
-            self.vx = 0.0
+            self.x_dot = 0.0
+            self.f = 0.0
+        
+        x_acc, theta_acc = self._compute_dynamics_accurate()
+            
+        # Euler
+        self.x_dot += self.dt * x_acc
+        self.theta_dot += self.dt * theta_acc
+        
+        self.x += self.dt * self.x_dot
+        self.theta += self.dt * self.theta_dot
+        
+        # Clamp
+        # self.x = min(max(-self.x_lim, self.x), self.x_lim)
+        # self.x_dot = min(max(-self.x_dot_lim, self.x_dot), self.x_dot_lim)
+        # self.theta_dot = min(max(-self.theta_dot_lim, self.theta_dot), self.theta_dot_lim)
+        self.theta %= 2.0 * pi
         
         # Reset force
         self.f = 0.0
         
     def move(self, action: Action) -> None:
         """ Move cart based on given action """
-        f_mag = 10.0
-        
         match action:
             case Action.IDLE:
                 self.f = 0.0
             case Action.LEFT:
-                self.f = -f_mag
+                self.f = -self.force_mag
             case Action.RIGHT:
-                self.f = f_mag
+                self.f = self.force_mag
                          
         self._update()   
         
     def get_state(self) -> np.ndarray:
         """ Return state """
-        return np.array([self.x, self.vx, self.theta, self.vtheta], dtype=np.float32)
+        return np.array([self.x, self.x_dot, self.theta, self.theta_dot], dtype=np.float32)
     
     
 if __name__ == '__main__':

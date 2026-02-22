@@ -55,12 +55,11 @@ def main() -> None:
             ai_action_idx = best_ai.get_action(state)
             ai_action = ACTIONS[ai_action_idx]
             env.move(ai_action)
-            
-            if ai_action == Action.IDLE:
-                print("idle")
                     
             if not running:
                 break
+            
+        print(env.get_state())
         
         # Rendering
         pg.display.set_caption(f"{WINDOW_TITLE}")

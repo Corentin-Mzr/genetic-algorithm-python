@@ -46,15 +46,14 @@ class CartpoleWrapper(Environment):
         
         # Give a score based on how close the pole is to the vertical
         if self.cartpole.theta < 0.5 * pi or self.cartpole.theta > 1.5 * pi:
-            stability_score = 1.0 * cos(self.cartpole.theta) ** 2
+            stability_score = 1.0 * cos(self.cartpole.theta) ** 3
             self.steps_below_horizontal = 0 
         else:
         #     stability_score = -2.0
             self.steps_below_horizontal += 1
             
         # Give a reward for keeping the cart near the center
-        if abs(self.cartpole.x) < 0.25 * self.cartpole.x_lim:
-            center_reward = 1.0 - abs(self.cartpole.x) / self.cartpole.x_lim
+        center_reward = 2.0 * (1.0 - abs(self.cartpole.x) / self.cartpole.x_lim) ** 2
         
         # Very close to vertical
         # if self.cartpole.theta < 0.05 * pi or self.cartpole.theta > 1.95 * pi:

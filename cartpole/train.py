@@ -19,6 +19,6 @@ if __name__ == '__main__':
     
     
     save_folder = "cartpole/models"
-    result = train(CartpoleWrapper, cartpole_factory, 50, 128, 0.2, 0.1, save_rate=0.2)
+    result = train(CartpoleWrapper, cartpole_factory, 50, 128, 0.2, 0.1, save_rate=0.2, config=config)
     save_training(result, save_folder)
     save_plot(result, f"{save_folder}/training.svg")
