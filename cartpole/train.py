@@ -5,17 +5,17 @@ from core.train import train, save_plot, save_training, GATrainConfig
 
 if __name__ == '__main__':
     def cartpole_factory() -> CartpoleAI:
-        return CartpoleAI(input_size=CartpoleWrapper().input_size, hidden_size=2, output_size=CartpoleWrapper().output_size)
+        return CartpoleAI(input_size=CartpoleWrapper().input_size, hidden_size=4, output_size=CartpoleWrapper().output_size)
     
     config = GATrainConfig(
-        generations=50,
+        generations=100,
         pop_size=128,
         mutation_rate=0.2,
         mutation_strength=0.1,
         num_trials=20,
         parallel=True,
-        elite_ratio=0.06,
-        tournament_size=3,
+        elite_ratio=0.1,
+        tournament_size=2,
         tournament_ratio=0.5,
         crossover_points=6,
         offspring_ratio=0.9

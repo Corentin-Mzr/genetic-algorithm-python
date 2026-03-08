@@ -55,7 +55,7 @@ class Cartpole:
     def _reset(self) -> None:
         """ Randomize cart position and pole angle """
         self.x = random.uniform(-self.x_lim, self.x_lim)
-        self.theta = random.uniform(0.0, 2.0 * pi)
+        self.theta = random.uniform(0.5 * pi, 1.5 * pi)
         
     def _compute_dynamics_accurate(self) -> tuple[float, float]:
         """ Compute accurate cart and pole accelerations, with friction """

@@ -161,7 +161,7 @@ if __name__ == '__main__':
             continue
         
         best_model = np.load(model)
-        best_ai = CartpoleAI(CartpoleWrapper().input_size, 2, CartpoleWrapper().output_size)
+        best_ai = CartpoleAI(CartpoleWrapper().input_size, 4, CartpoleWrapper().output_size)
         best_ai.set_weights(best_model)
         
         result = test(best_ai, model.name)

@@ -35,11 +35,26 @@ class GATrainResult:
     best_fitness_per_gen: list[float]
     average_fitness_per_gen: list[float]
     
-def save_plot(result: GATrainResult, filepath: str = "training.svg") -> None:
-    """ Save the plot that shows fitness evolution during training """
+def save_plot(result: GATrainResult, filepath: str = "training.svg", plot_style: str = "default") -> None:
+    """ 
+    Save the plot that shows fitness evolution during training 
+    
+    Plot style can be default or log
+    """
+    styles = ["default", "log"]
+    if plot_style not in styles:
+        raise ValueError(f"Invalid plot style. Must be one of {styles}")
+    
     _, axs = plt.subplots(nrows=1, ncols=1, figsize=(16, 9), sharex=True, linewidth=3)
-    axs.semilogy(result.best_fitness_per_gen, label="Best fitness")
-    axs.semilogy(result.average_fitness_per_gen, label="Average fitness")
+    
+    if plot_style == "log":
+        axs.semilogy(result.best_fitness_per_gen, label="Best fitness")
+        axs.semilogy(result.average_fitness_per_gen, label="Average fitness")
+    else:
+        axs.plot(result.best_fitness_per_gen, label="Best fitness")
+        axs.plot(result.average_fitness_per_gen, label="Average fitness")
+    
+    
     axs.set_title("Fitness evolution")
     axs.set_xlabel("Generation")
     axs.set_ylabel("Fitness")

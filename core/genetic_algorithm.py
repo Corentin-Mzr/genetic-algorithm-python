@@ -60,7 +60,7 @@ class GeneticAlgorithm:
         for _ in range(num_trials):
             env = env_type()
             state = env.reset()
-            total_reward = 0
+            total_reward = 0.0
             done = False
             
             while not done:
@@ -143,6 +143,8 @@ class GeneticAlgorithm:
                 
             worker = partial(GeneticAlgorithm.play, env_type=self.env, num_trials=num_trials, seed=gen_seed)
             fitnesses = list(self.executor.map(worker, self.population))
+            
+            print(f"Fitnesses {sorted(fitnesses, reverse=True)}")
                 
             for indiv, fitness in zip(self.population, fitnesses):
                 indiv.fitness = fitness

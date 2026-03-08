@@ -28,7 +28,7 @@ class CartpoleWrapper(Environment):
     
     def step(self, action_idx: int) -> Observation:
         MAX_STEPS = 1000
-        EARLY_EXIT_STEPS = 50
+        EARLY_EXIT_STEPS = 100
         WIN_STEPS = 250
         reward = 0.0
         done = False
@@ -49,11 +49,13 @@ class CartpoleWrapper(Environment):
             stability_score = 1.0 * cos(self.cartpole.theta) ** 3
             self.steps_below_horizontal = 0 
         else:
-        #     stability_score = -2.0
+            stability_score = -1.0
             self.steps_below_horizontal += 1
             
         # Give a reward for keeping the cart near the center
-        center_reward = 2.0 * (1.0 - abs(self.cartpole.x) / self.cartpole.x_lim) ** 2
+        if stability_score > 0.0:
+            # center_reward = 5.0 * (1.0 - (abs(self.cartpole.x) / self.cartpole.x_lim) ** 0.25)
+            center_reward = 4.0 / (1.0 + (abs(self.cartpole.x) / 0.25 * self.cartpole.x_lim) ** 2)
         
         # Very close to vertical
         # if self.cartpole.theta < 0.05 * pi or self.cartpole.theta > 1.95 * pi:

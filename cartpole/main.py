@@ -23,7 +23,7 @@ def main() -> None:
     
     # AI
     best_model = np.load("cartpole/models/best_ai.npy")
-    best_ai = CartpoleAI(CartpoleWrapper().input_size, 2, CartpoleWrapper().output_size)
+    best_ai = CartpoleAI(CartpoleWrapper().input_size, 4, CartpoleWrapper().output_size)
     best_ai.set_weights(best_model)
     
     # Main loop
