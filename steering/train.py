@@ -1,18 +1,18 @@
-from game_2048.wrapper import Game2048Wrapper
-from game_2048.ai import Game2048AI
+from steering.wrapper import SteeringWrapper
+from steering.ai import SteeringAI
 
 from core.train import train, save_plot, save_training, GATrainConfig
 
 if __name__ == '__main__':
-    def game_2048_factory() -> Game2048AI:
-        return Game2048AI(input_size=Game2048Wrapper().input_size, hidden_size=8, output_size=Game2048Wrapper().output_size)
+    def steering_factory() -> SteeringAI:
+        return SteeringAI(input_size=SteeringWrapper().input_size, hidden_size=8, output_size=SteeringWrapper().output_size)
     
     config = GATrainConfig(
-        generations=200,
-        pop_size=128,
+        generations=50,
+        pop_size=256,
         mutation_rate=0.2,
         mutation_strength=0.1,
-        num_trials=10,
+        num_trials=1,
         parallel=True,
         elite_ratio=0.06,
         tournament_size=3,
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     )
     
     
-    save_folder = "game_2048/models"
-    result = train(Game2048Wrapper, game_2048_factory, save_rate=0.2, config=config)
+    save_folder = "steering/models"
+    result = train(SteeringWrapper, steering_factory, save_rate=0.2, config=config)
     save_training(result, save_folder)
     save_plot(result, f"{save_folder}/training.svg")

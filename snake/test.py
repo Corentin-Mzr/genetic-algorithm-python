@@ -31,7 +31,7 @@ class SnakeTestResult:
     
 def test(ai: SnakeAI, model_name: str, num_trials: int = 50) -> SnakeTestResult:
     env = SnakeGameWrapper()
-    best_score = -1
+    best_score = -np.inf
     best_grids = []
     best_actions = []
     best_rewards = []
@@ -64,7 +64,7 @@ def test(ai: SnakeAI, model_name: str, num_trials: int = 50) -> SnakeTestResult:
     # Return best performance
     result = SnakeTestResult(
         model_name=model_name,
-        score=best_score,
+        score=int(best_score),
         grids=best_grids,
         actions=best_actions,
         rewards=best_rewards,

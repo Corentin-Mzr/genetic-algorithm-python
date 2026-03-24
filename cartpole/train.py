@@ -12,7 +12,7 @@ if __name__ == '__main__':
         pop_size=128,
         mutation_rate=0.2,
         mutation_strength=0.1,
-        num_trials=20,
+        num_trials=5,
         parallel=True,
         elite_ratio=0.1,
         tournament_size=2,

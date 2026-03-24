@@ -1,76 +1,75 @@
 from pathlib import Path
-from copy import deepcopy
+from copy import deepcopy, copy
 from dataclasses import dataclass
 
 import numpy as np
 import pygame as pg
 
-from cartpole.env import Action
-from cartpole.ai import CartpoleAI
-from cartpole.wrapper import CartpoleWrapper
-from cartpole.render import clear, draw
-from cartpole.constants import *
+from steering.ai import SteeringAI
+from steering.wrapper import SteeringWrapper
+from steering.render import clear, draw_agent, draw_obstacle, draw_target, View
+from steering.constants import *
+from steering.world import World
+from steering.world_types import create_world_labyrinth
+
 
 
 def to_enum_str(v: int) -> str:
-    if v == Action.IDLE.value:
-        return "IDLE"
-    if v == Action.LEFT.value:
+    if v == 0:
+        return "STRAIGHT"
+    if v == 1:
         return "LEFT"
-    if v == Action.RIGHT.value:
+    if v == 2:
         return "RIGHT"
     return "UNKNOWN"
 
 @dataclass
-class CartpoleTestResult:
+class SteeringTestResult:
     model_name: str
     score: float
-    states: list[np.ndarray]
+    positions: list[Vec2]
     actions: list[int]
     rewards: list[float]
     steps: int
     
-def test(ai: CartpoleAI, model_name: str, num_trials: int = 5) -> CartpoleTestResult:
-    env = CartpoleWrapper()
-    best_score = -np.inf
-    best_grids = []
+def test(ai: SteeringAI, model_name: str, num_trials: int = 50) -> SteeringTestResult:
+    wrapper = SteeringWrapper()
+    best_score = -math.inf
     best_actions = []
     best_rewards = []
+    best_positions = []
     steps = 0
     
     for _ in range(num_trials):
-        state = env.reset()
+        state = wrapper.reset()
         terminated = False
-        states = []
         actions = []
         rewards = []
         i = 0
-        score = 0.0
-        
-        # Store initial state
-        states.append(env.cartpole.get_state().copy())
+        total_reward = 0.0
+        positions = []
         
         while not terminated:
-            action = ai.get_action(state)
-            state, reward, terminated = env.step(action)
-            states.append(env.cartpole.get_state().copy())
-            actions.append(action)
+            direction = ai.get_action(state)
+            state, reward, terminated = wrapper.step(direction)
+            actions.append(direction)
             rewards.append(reward)
-            score += reward
+            positions.append(copy(wrapper.env.agent.position))
+            total_reward += reward
             i += 1
         
-        if score > best_score:
-            best_score = score
-            best_grids = deepcopy(states)
+        if total_reward > best_score:
+            best_score = total_reward
             best_actions = deepcopy(actions)
             best_rewards = deepcopy(rewards)
+            best_positions = deepcopy(positions)
             steps = i
         
     # Return best performance
-    result = CartpoleTestResult(
+    result = SteeringTestResult(
         model_name=model_name,
         score=best_score,
-        states=best_grids,
+        positions=best_positions,
         actions=best_actions,
         rewards=best_rewards,
         steps=steps
@@ -79,7 +78,7 @@ def test(ai: CartpoleAI, model_name: str, num_trials: int = 5) -> CartpoleTestRe
     return result
 
 
-def visualize_test_result(result: CartpoleTestResult) -> None:
+def visualize_test_result(result: SteeringTestResult) -> None:
     # Pygame setup
     pg.init()
     screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -95,7 +94,15 @@ def visualize_test_result(result: CartpoleTestResult) -> None:
     # Steps
     step = 0
     accumulator: float = 0.0
-    delta_time: float = 1.0 / 60.0
+    delta_time: float = DELTA_TIME
+    
+    world = World()
+    obstacles = create_world_labyrinth(WORLD_SIZE)
+    for obs in obstacles:
+        world.add_obstacle(obs)
+    
+    
+    view = View(Vec2.zero(), size=WORLD_SIZE)
     
     # Main loop
     while running:
@@ -117,15 +124,28 @@ def visualize_test_result(result: CartpoleTestResult) -> None:
             step %= result.steps
         if pressed_keys[pg.K_RETURN] or pressed_keys[pg.K_ESCAPE]:
             running = False
+            
+        # Simulation
+        if step == 0:
+            world = World()
+            obstacles = create_world_labyrinth(WORLD_SIZE)
+            for obs in obstacles:
+                world.add_obstacle(obs)
+        
+        
         
         # Rendering
-        x, th = float(result.states[step][0]), float(result.states[step][2])
         clear(screen)
-        draw(screen, x, th)
+        
+        for obs in world.obstacles:
+            draw_obstacle(screen, view, obs, (0, 128, 0))
+
+        draw_target(screen, view, world.target_pos, world.target_radius, (128, 128, 0))
+        draw_agent(screen, view, world.agent, (0, 0, 128), debug=True)
         
         model = f"Model: {result.model_name}"
         curr_step = f"Step: {step + 1}/{result.steps}"
-        curr_reward = f"Reward: {(result.rewards[step - 1]) if step > 0 else 0 :.1f}"
+        curr_reward = f"Reward: {(result.rewards[step - 1]) if step > 0 else 0 :.0f}"
         next_action = f"Next Action: {to_enum_str(result.actions[step]) if step < result.steps - 1 else "None"}"
         final_score = f"Final score: {result.score:.1f}"
             
@@ -139,6 +159,7 @@ def visualize_test_result(result: CartpoleTestResult) -> None:
         
         # Update game
         while accumulator >= delta_time:
+            world.move(result.actions[step])
             accumulator -= delta_time
             step += 1
             step %= result.steps
@@ -150,7 +171,7 @@ def visualize_test_result(result: CartpoleTestResult) -> None:
 
 
 if __name__ == '__main__':
-    directory = Path("cartpole/models")
+    directory = Path("steering/models")
     models = list(directory.iterdir())
     
     for model in models:
@@ -161,9 +182,9 @@ if __name__ == '__main__':
             continue
         
         best_model = np.load(model)
-        best_ai = CartpoleAI(CartpoleWrapper().input_size, 4, CartpoleWrapper().output_size)
+        best_ai = SteeringAI(SteeringWrapper().input_size, 8, SteeringWrapper().output_size)
         best_ai.set_weights(best_model)
         
-        result = test(best_ai, model.name)
+        result = test(best_ai, model.name, num_trials=10)
         
         visualize_test_result(result)

@@ -35,7 +35,7 @@ class Game2048TestResult:
     
 def test(ai: Game2048AI, model_name: str, num_trials: int = 50) -> Game2048TestResult:
     env = Game2048Wrapper()
-    best_score = -1
+    best_score = -np.inf
     best_grids = []
     best_actions = []
     best_rewards = []
@@ -47,18 +47,18 @@ def test(ai: Game2048AI, model_name: str, num_trials: int = 50) -> Game2048TestR
         grids = []
         actions = []
         rewards = []
-        i = 1
+        i = 0
         
         # Store initial state
         grids.append(env.game.grid.copy())
         
         while not terminated:
-            i += 1
             direction = ai.get_action(state)
             state, reward, terminated = env.step(direction)
             grids.append(env.game.grid.copy())
             actions.append(direction)
             rewards.append(reward)
+            i += 1
         
         if env.game.score > best_score:
             best_score = env.game.score
@@ -70,7 +70,7 @@ def test(ai: Game2048AI, model_name: str, num_trials: int = 50) -> Game2048TestR
     # Return best performance
     result = Game2048TestResult(
         model_name=model_name,
-        score=best_score,
+        score=int(best_score),
         grids=best_grids,
         actions=best_actions,
         rewards=best_rewards,

@@ -1,9 +1,9 @@
 import numpy as np
 
-from core.neural_network import NeuralNetwork, weight_init_he, relu, softmax
+from core.neural_network import NeuralNetwork, weight_init_he, relu
 
 
-class CartpoleAI(NeuralNetwork):
+class SteeringAI(NeuralNetwork):
     def __init__(self, input_size: int, hidden_size: int, output_size: int):
         self.input_size = input_size
         self.output_size = output_size
@@ -29,7 +29,6 @@ class CartpoleAI(NeuralNetwork):
 
         # Output
         x = np.dot(x, self.w3) + self.b3
-        x = softmax(x)
         return x
 
     def get_action(self, state: np.ndarray) -> int:
@@ -76,9 +75,16 @@ class CartpoleAI(NeuralNetwork):
 
 
 if __name__ == "__main__":
-    ai = CartpoleAI(4, 2, 3)
+    from steering.constants import AGENT_RAY_COUNT
+
+    ai = SteeringAI(AGENT_RAY_COUNT + 1, 8, 3)
     weights = ai.get_weights()
-    print(weights)
-    state = np.array([2.0, 0.0, 0.0, 0.0])
+    # print(weights)
+
+    inp = np.array([-1, -1, -1, -1, -1, -1, 0.8])
+
+    state = np.array(inp)
+    r = ai.forward(state)
+    print(r)
     action = ai.get_action(state)
     print(action)
